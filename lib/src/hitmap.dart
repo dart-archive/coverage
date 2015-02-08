@@ -106,6 +106,7 @@ void _worker(_WorkMessage msg) {
 }
 
 List<List> _split(List list, int nBuckets) {
+  if (nBuckets == null || nBuckets < 1) nBuckets = 1;
   var buckets = new List(nBuckets);
   var bucketSize = list.length ~/ nBuckets;
   var leftover = list.length % nBuckets;

@@ -53,15 +53,29 @@ void main(List<String> arguments) {
     print('Failed to collect coverage within ${timeout}s');
     exit(1);
   }
-  Future connected = retry(
-      () => VMService.connect(options.host, options.port), retryInterval);
+  if (options.script != null) {
+    Process
+        .run('dart', ['--observe=${options.port}', options.script])
+        .then((process) {
+      if (process.exitCode == 0) {
+        print('Script execution completed.');
+      } else {
+        print(process.stdout);
+        print(process.stderr);
+        print('Script execution failed with exit code ${process.exitCode}.');
+        exit(1);
+      }
+    });
+  }
+
+  Future connected =
+      retry(() => VMService.connect(options.host, options.port), retryInterval);
   if (options.timeout != null) {
     connected.timeout(options.timeout, onTimeout: onTimeout);
   }
   connected.then((vmservice) {
-    Future ready = options.waitPaused
-        ? waitIsolatesPaused(vmservice)
-        : new Future.value();
+    Future ready =
+        options.waitPaused ? waitIsolatesPaused(vmservice) : new Future.value();
     if (options.timeout != null) {
       ready.timeout(options.timeout, onTimeout: onTimeout);
     }
@@ -80,10 +94,11 @@ class Options {
   final String port;
   final IOSink out;
   final Duration timeout;
+  final String script;
   final bool waitPaused;
   final bool resume;
-  Options(this.host, this.port, this.out, this.timeout, this.waitPaused,
-      this.resume);
+  Options(this.host, this.port, this.out, this.timeout, this.script,
+      this.waitPaused, this.resume);
 }
 
 Options parseArgs(List<String> arguments) {
@@ -96,6 +111,8 @@ Options parseArgs(List<String> arguments) {
       abbr: 'o', defaultsTo: 'stdout', help: 'output: may be file or stdout');
   parser.addOption('connect-timeout',
       abbr: 't', help: 'connect timeout in seconds');
+  parser.addOption('script',
+      abbr: 's', help: 'Dart script and arguments to collect coverage from');
   parser.addFlag('wait-paused',
       abbr: 'w',
       defaultsTo: false,
@@ -133,6 +150,6 @@ Options parseArgs(List<String> arguments) {
   var timeout = (args['connect-timeout'] == null)
       ? null
       : new Duration(seconds: int.parse(args['connect-timeout']));
-  return new Options(args['host'], args['port'], out, timeout,
+  return new Options(args['host'], args['port'], out, timeout, args['script'],
       args['wait-paused'], args['resume-isolates']);
 }

@@ -28,7 +28,11 @@ for more details.
 or if the `pub global run` executables are in your path, just
     
     collect_coverage.dart --port=NNNN -o coverage.json --resume-isolates    
+    
+These previous two commands can also be combined to one 
 
+    collect_coverage.dart --port=NNNN -o coverage.json --resume-isolates --script=script.dart
+    
 If `collect_coverage.dart` is invoked before the script from which coverage is
 to be collected, it will wait until it detects a VM observatory port to which
 it can connect. An optional `--connect-timeout` may be specified (in seconds).

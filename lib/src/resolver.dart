@@ -23,6 +23,33 @@ class Resolver {
         // No sdk-root given, do not resolve dart: URIs.
         return null;
       }
+      // TODO(zoechi) remove when http://dartbug.com/22846 is fixed
+      const internalFiles = const [
+        'internal.dart',
+        'iterable.dart',
+        'list.dart',
+        'lists.dart',
+        'print.dart',
+        'sort.dart',
+        'symbol.dart',
+      ];
+      if (uri.startsWith('${DART_PREFIX}_builtin')) {
+        failed.add(uri);
+        return null;
+      }
+      if (uri.startsWith('${DART_PREFIX}_internal')) {
+        if (internalFiles.firstWhere((f) => uri.endsWith(f),
+                orElse: () => '') !=
+            '') {
+          uri = uri.replaceFirst(
+              '${DART_PREFIX}_internal', '${DART_PREFIX}internal');
+        }
+        if (uri == '${DART_PREFIX}_internal') {
+          failed.add(uri);
+          return null;
+        }
+      }
+      // end TODO(zoechi) 22846
       var slashPos = uri.indexOf('/');
       var filePath;
       if (slashPos != -1) {

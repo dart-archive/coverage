@@ -22,7 +22,13 @@ class LcovFormatter implements Formatter {
     var emitOne = (key) {
       var v = hitmap[key];
       StringBuffer entry = new StringBuffer();
-      var source = resolver.resolve(key);
+      var source;
+      try {
+        source = resolver.resolve(key);
+      } on FileSystemException catch (e) {
+        // Couldn't resolve a file
+        print('Warning: couldn\'t resolve $key');
+      }
       if (source == null) {
         return new Future.value();
       }
@@ -56,7 +62,13 @@ class PrettyPrintFormatter implements Formatter {
     var emitOne = (key) {
       var v = hitmap[key];
       var c = new Completer();
-      var uri = resolver.resolve(key);
+      var uri;
+      try {
+        uri = resolver.resolve(key);
+      } on FileSystemException catch (e) {
+        // Couldn't resolve a file
+        print('Warning: couldn\'t resolve $key');
+      }
       if (uri == null) {
         c.complete();
       } else {

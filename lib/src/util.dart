@@ -10,9 +10,13 @@ import 'dart:async';
 /// the result on successful completion.
 Future retry(Future f(), Duration interval) {
   var completer = new Completer();
-  doRetry() {
-    f().then((result) => completer.complete(result),
-        onError: (e) => new Timer(interval, doRetry));
+  doRetry() async {
+    try {
+      var result = await f();
+      completer.complete(result);
+    } catch (_) {
+      new Timer(interval, doRetry);
+    }
   }
   doRetry();
   return completer.future;

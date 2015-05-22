@@ -65,7 +65,7 @@ void main() {
 
     // be very careful if you change the test file
     expect(res, contains("      0|  return a - b;"));
-    expect(res, contains('       |  doRetry() {'));
+    expect(res, contains('       |  doRetry() async {'));
 
     var hitLineRegexp = new RegExp(r'\s+(\d+)\|  return a \+ b;');
     var match = hitLineRegexp.allMatches(res).single;

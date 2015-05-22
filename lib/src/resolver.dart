@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 
 /// [Resolver] resolves imports with respect to a given environment.
@@ -84,22 +85,19 @@ class Loader {
 
   /// Loads an imported resource and returns a [Future] with a [List] of lines.
   /// Returns [null] if the resource could not be loaded.
-  Future<List<String>> load(String uri) {
-    if (uri.startsWith('http')) {
-      Completer c = new Completer();
-      HttpClient client = new HttpClient();
-      client
-          .getUrl(Uri.parse(uri))
-          .then((request) => request.close())
-          .then((response) => response.transform(UTF8.decoder).toList())
-          .then((data) => c.complete(data))
-          .then((_) => client.close())
-          .catchError((e) {
-        failed.add(uri);
-        c.complete(null);
-      });
-      return c.future;
+  Future<List<String>> load(String uri) async {
+    var resourceUri = Uri.parse(uri);
+    try {
+      if (resourceUri.scheme == 'http' || resourceUri.scheme == 'https') {
+        var response = await http.get(resourceUri);
+        return const LineSplitter().convert(response.body);
+      } else {
+        assert(resourceUri.scheme == 'file' || resourceUri.scheme.isEmpty);
+        return new File.fromUri(resourceUri).readAsLines();
+      }
+    } catch (_) {
+      failed.add(uri);
+      return null;
     }
-    return new File(uri).readAsLines().catchError((e) => new Future.value());
   }
 }

@@ -54,7 +54,7 @@ class VMService {
     return new AllocationProfile.fromJson(response);
   }
 
-  Future getCoverage(String isolateId, {String targetId}) async {
+  Future<CodeCoverage> getCoverage(String isolateId, {String targetId}) async {
     var params = {'isolateId': isolateId};
     if (targetId != null) {
       params['targetId'] = targetId;

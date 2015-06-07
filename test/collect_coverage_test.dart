@@ -14,7 +14,6 @@ import 'package:test/test.dart';
 
 final _sampleAppPath = p.join('test', 'test_files', 'test_app.dart');
 final _isolateLibPath = p.join('test', 'test_files', 'test_app_isolate.dart');
-final _collectAppPath = p.join('bin', 'collect_coverage.dart');
 
 final _sampleAppFileUri = p.toUri(p.absolute(_sampleAppPath)).toString();
 final _isolateLibFileUri = p.toUri(p.absolute(_isolateLibPath)).toString();
@@ -111,27 +110,10 @@ Future<String> _collectCoverage() async {
     throw 'We timed out waiting for the sample app to finish.';
   });
 
-  // run the tool with the right flags
-  // TODO: need to get all of this functionality in the lib
-  var toolResult = await Process
-      .run('dart', [
-    _collectAppPath,
-    '--port',
-    openPort.toString(),
-    '--resume-isolates',
-    '--wait-paused'
-  ])
-      .timeout(_timeout, onTimeout: () {
-    throw 'We timed out waiting for the tool to finish.';
-  });
-
-  if (toolResult.exitCode != 0) {
-    print(toolResult.stdout);
-    print(toolResult.stderr);
-    fail('Tool failed with exit code ${toolResult.exitCode}.');
-  }
+  var collectionResultFuture =
+      collect('127.0.0.1', openPort, true, true, timeout: _timeout);
 
   await sampleProcFuture;
 
-  return toolResult.stdout;
+  return JSON.encode(await collectionResultFuture);
 }

@@ -1,3 +1,7 @@
+###0.7.1
+
+ * Added `runAndCollect` API to library.
+
 ###0.7.0
 
  * `format_coverage` no longer emits SDK coverage unless --sdk-root is set

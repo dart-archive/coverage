@@ -4,7 +4,6 @@
 
 library coverage.test.collect_coverage_test;
 
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -12,17 +11,16 @@ import 'package:coverage/coverage.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-final _sampleAppPath = p.join('test', 'test_files', 'test_app.dart');
+import 'test_util.dart';
+
 final _isolateLibPath = p.join('test', 'test_files', 'test_app_isolate.dart');
 
-final _sampleAppFileUri = p.toUri(p.absolute(_sampleAppPath)).toString();
+final _sampleAppFileUri = p.toUri(p.absolute(testAppPath)).toString();
 final _isolateLibFileUri = p.toUri(p.absolute(_isolateLibPath)).toString();
-
-const _timeout = const Duration(seconds: 5);
 
 void main() {
   test('collect_coverage', () async {
-    var resultString = await _getCoverageResult();
+    var resultString = await getCoverageResult();
 
     // analyze the output json
     var json = JSON.decode(resultString) as Map;
@@ -52,7 +50,7 @@ void main() {
   });
 
   test('createHitmap', () async {
-    var resultString = await _getCoverageResult();
+    var resultString = await getCoverageResult();
 
     var json = JSON.decode(resultString) as Map;
 
@@ -72,7 +70,7 @@ void main() {
 
     var outputFile = new File(p.join(tempDir.path, 'coverage.json'));
 
-    var coverageResults = await _getCoverageResult();
+    var coverageResults = await getCoverageResult();
     await outputFile.writeAsString(coverageResults, flush: true);
 
     var parsedResult = await parseCoverage([outputFile], 1);
@@ -80,40 +78,4 @@ void main() {
     expect(parsedResult, contains(_sampleAppFileUri));
     expect(parsedResult, contains(_isolateLibFileUri));
   });
-}
-
-String _coverageData;
-
-Future<String> _getCoverageResult() async {
-  if (_coverageData == null) {
-    _coverageData = await _collectCoverage();
-  }
-  return _coverageData;
-}
-
-Future<String> _collectCoverage() async {
-  expect(await FileSystemEntity.isFile(_sampleAppPath), isTrue);
-
-  // need to find an open port
-  var socket = await ServerSocket.bind(InternetAddress.ANY_IP_V4, 0);
-  int openPort = socket.port;
-  await socket.close();
-
-  // run the sample app, with the right flags
-  var sampleProcFuture = Process
-      .run('dart', [
-    '--enable-vm-service=$openPort',
-    '--pause_isolates_on_exit',
-    _sampleAppPath
-  ])
-      .timeout(_timeout, onTimeout: () {
-    throw 'We timed out waiting for the sample app to finish.';
-  });
-
-  var collectionResultFuture =
-      collect('127.0.0.1', openPort, true, true, timeout: _timeout);
-
-  await sampleProcFuture;
-
-  return JSON.encode(await collectionResultFuture);
 }

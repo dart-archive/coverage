@@ -51,7 +51,13 @@ class Resolver {
         return null;
       }
       var path = uri.substring(PACKAGE_PREFIX.length, uri.length);
-      return resolveSymbolicLinks(p.join(packageRoot, path));
+      var resolved = resolveSymbolicLinks(p.join(packageRoot, path));
+      if (resolved == null && path.contains('/')) {
+        // try adding lib for projects that use package:lib
+        path = path.replaceFirst('/', '/lib/');
+        resolved = resolveSymbolicLinks(p.join(packageRoot, path));
+      }
+      return resolved;
     }
     if (uri.startsWith(FILE_PREFIX)) {
       return resolveSymbolicLinks(p.fromUri(Uri.parse(uri)));

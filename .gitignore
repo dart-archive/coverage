@@ -1,15 +1,5 @@
-# Pub
+.packages
+.pub
 packages
 pubspec.lock
-build
-.pub
-.packages
 
-# IDEs
-.project
-.settings
-.idea
-*.iml
-
-# Temp files
-*~

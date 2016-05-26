@@ -1,0 +1,6 @@
+analyzer:
+  strong-mode: true
+linter:
+  rules:
+    - camel_case_types
+    - empty_constructor_bodies

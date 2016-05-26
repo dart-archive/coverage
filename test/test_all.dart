@@ -1,15 +1,13 @@
 import 'package:test/test.dart';
 
-import 'collect_coverage_test.dart' as collect_coverage;
-import 'collect_coverage_test.dart' as collect_coverage_api;
-import 'lcov_test.dart' as lcov;
+import 'collect_test.dart' as collect;
+import 'lcov_formatter_test.dart' as lcov_formatter;
 import 'run_and_collect_test.dart' as run_and_collect;
 import 'util_test.dart' as util;
 
 void main() {
-  group('collect_coverage', collect_coverage.main);
-  group('collect_coverage_api', collect_coverage_api.main);
-  group('lcov', lcov.main);
+  group('collect_coverage_api', collect.main);
+  group('lcov_formatter', lcov_formatter.main);
   group('run_and_collect', run_and_collect.main);
   group('util', util.main);
 }

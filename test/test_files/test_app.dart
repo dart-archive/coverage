@@ -9,7 +9,7 @@ import 'package:coverage/src/util.dart';
 
 import 'test_app_isolate.dart';
 
-main() async {
+main(List<String> args) async {
   for (var i = 0; i < 10; i++) {
     for (var j = 0; j < 10; j++) {
       var sum = usedMethod(i, j);
@@ -17,6 +17,12 @@ main() async {
         throw 'bad method!';
       }
     }
+  }
+
+  if (args.contains('never-exit')) {
+    // create a receivePort that is never used – keeps the isolate from
+    // stopping
+    new ReceivePort();
   }
 
   ReceivePort port = new ReceivePort();
@@ -32,7 +38,8 @@ main() async {
     throw 'expected 3!';
   }
 
-  var result = await retry(() async => 42, const Duration(seconds: 1));
+  var result = await retry(
+      'reticulate splines', () async => 42, const Duration(seconds: 1));
   print(result);
 }
 

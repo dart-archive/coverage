@@ -2,14 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-library coverage.src.util;
-
 import 'dart:async';
 import 'dart:io';
 
+import 'coverage_timeout_exception.dart';
+
 /// Retries the specified function with the specified interval and returns
 /// the result on successful completion.
-Future retry(Future f(), Duration interval, {Duration timeout}) async {
+Future retry(String timeoutOperation, Future retryFunction(), Duration interval,
+    {Duration timeout}) async {
   var keepGoing = true;
 
   Future _withTimeout(Future f(), {Duration duration}) {
@@ -20,22 +21,14 @@ Future retry(Future f(), Duration interval, {Duration timeout}) async {
     return f().timeout(duration, onTimeout: () {
       keepGoing = false;
 
-      var msg;
-
-      if (duration.inSeconds == 0) {
-        msg = '${duration.inMilliseconds}ms';
-      } else {
-        msg = '${duration.inSeconds}s';
-      }
-
-      throw new StateError('Failed to complete within ${msg}');
+      throw newCoverageTimeoutException(timeoutOperation, duration);
     });
   }
 
   return _withTimeout(() async {
     while (keepGoing) {
       try {
-        var result = await f();
+        var result = await retryFunction();
         return result;
       } catch (_) {
         if (keepGoing) {
@@ -44,6 +37,32 @@ Future retry(Future f(), Duration interval, {Duration timeout}) async {
       }
     }
   }, duration: timeout);
+}
+
+// TODO(kevmoo) will want an option for package spec (--packages=<path>) soon
+Future<Process> runDartAppWithVMService(String scriptPath, int openPort,
+    {String packageRoot, List<String> scriptArgs}) async {
+  var dartArgs = ['--enable-vm-service=$openPort', '--pause_isolates_on_exit',];
+
+  if (packageRoot != null) {
+    dartArgs.add('--package-root=$packageRoot');
+  }
+
+  dartArgs.add(scriptPath);
+
+  if (scriptArgs != null) {
+    dartArgs.addAll(scriptArgs);
+  }
+
+  var processFuture = Process.start('dart', dartArgs);
+
+  // TODO(kevmoo): figure out why this is needed
+  // For some reason, connecting right away to the vm service just hangs
+  // on my MacBook, this seems to be about 4x the minimum duration to
+  // never hit this issue...
+  await new Future.delayed(const Duration(milliseconds: 100));
+
+  return await processFuture;
 }
 
 /// Returns an open port by creating a temporary Socket

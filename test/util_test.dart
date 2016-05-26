@@ -2,10 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-library coverage.test.util_test;
-
 import 'dart:async';
 
+import 'package:coverage/src/coverage_timeout_exception.dart';
 import 'package:coverage/src/util.dart';
 import 'package:test/test.dart';
 
@@ -27,7 +26,7 @@ void main() {
       return 42;
     }
 
-    var value = await retry(failCountTimes, _delay);
+    var value = await retry('op', failCountTimes, _delay);
 
     expect(value, 42);
     expect(count, _failCount);
@@ -50,8 +49,8 @@ void main() {
       }
 
       var safeTimoutDuration = _delay * _failCount * 2;
-      var value =
-          await retry(failCountTimes, _delay, timeout: safeTimoutDuration);
+      var value = await retry('op', failCountTimes, _delay,
+          timeout: safeTimoutDuration);
 
       expect(value, 42);
       expect(count, _failCount);
@@ -78,9 +77,10 @@ void main() {
       var unsafeTimeoutDuration = _delay * (_failCount / 2);
 
       try {
-        await retry(failCountTimes, _delay, timeout: unsafeTimeoutDuration);
-      } on StateError catch (e) {
-        expect(e.message, "Failed to complete within 25ms");
+        await retry('op', failCountTimes, _delay,
+            timeout: unsafeTimeoutDuration);
+      } on CoverageTimeoutException catch (e) {
+        expect(e.duration, unsafeTimeoutDuration);
         caught = true;
 
         expect(countAfterError, 0,

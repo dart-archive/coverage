@@ -8,34 +8,21 @@ import 'package:test/test.dart';
 import 'test_util.dart';
 
 void main() {
-  group('runAndCollect', () {
+  group('collect', () {
     test('collects correctly', () async {
-      var lineHits = await runAndCollect(testAppPath);
+      var lineHits = await collectTestCoverage();
 
       validateTestAppCoverage(lineHits);
     });
 
-    test('handles hanging apps correctly', () async {
+    test("handles hang correctly", () async {
       var caught = false;
       try {
-        await runAndCollect(testAppPath,
-            scriptArgs: ['never-exit'], timeout: const Duration(seconds: 1));
+        await collectTestCoverage(
+            neverExit: true, timeout: const Duration(seconds: 1));
       } on CoverageTimeoutException catch (e) {
         caught = true;
         expect(e.toString(), 'Failed to pause isolates within 1s.');
-      }
-
-      expect(caught, isTrue);
-    });
-
-    test('handle invalid application correctly', () async {
-      var caught = false;
-      try {
-        await runAndCollect('_not_an_app');
-      } on CoverageTimeoutException catch (e) {
-        caught = true;
-        expect(e.toString(),
-            'Failed to get the VM object from the VM service within 5s.');
       }
 
       expect(caught, isTrue);

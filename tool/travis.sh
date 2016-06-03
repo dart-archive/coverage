@@ -21,10 +21,12 @@ pub run test
 # Install dart_coveralls; gather and send coverage data.
 if [ "$COVERALLS_TOKEN" ] && [ "$TRAVIS_DART_VERSION" = "stable" ]; then
   echo "Running coverage..."
-  pub global activate dart_coveralls
-  pub global run dart_coveralls report \
-    --retry 2 \
-    --exclude-test-files \
-    --debug \
-    test/test_all.dart
+# TODO(cbracken) temporarily disabled until coveralls support is available
+# again.
+#  pub global activate dart_coveralls
+#  pub global run dart_coveralls report \
+#    --retry 2 \
+#    --exclude-test-files \
+#    --debug \
+#    test/test_all.dart
 fi

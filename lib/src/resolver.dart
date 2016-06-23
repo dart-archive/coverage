@@ -14,8 +14,9 @@ class Resolver {
   final List<String> failed = [];
   Map<String, Uri> _packages;
 
-  Resolver({String packagesPath, this.packageRoot, this.sdkRoot})
-      : packagesPath = packagesPath,
+  Resolver({String packagesPath, String packageRoot, this.sdkRoot})
+      : packageRoot = packageRoot,
+        packagesPath = packagesPath != null ? packagesPath : packageRoot + "/.packages",
         _packages = packagesPath != null ? _parsePackages(packagesPath) : null;
 
   /// Returns the absolute path wrt. to the given environment or null, if the

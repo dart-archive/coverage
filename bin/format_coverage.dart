@@ -29,7 +29,7 @@ class Environment {
 main(List<String> arguments) async {
   final env = parseArgs(arguments);
 
-  List files = filesToProcess(env.input);
+  List<File> files = filesToProcess(env.input);
   if (env.verbose) {
     print('Environment:');
     print('  # files: ${files.length}');
@@ -215,7 +215,7 @@ Environment parseArgs(List<String> arguments) {
 /// Given an absolute path absPath, this function returns a [List] of files
 /// are contained by it if it is a directory, or a [List] containing the file if
 /// it is a file.
-List filesToProcess(String absPath) {
+List<File> filesToProcess(String absPath) {
   var filePattern = new RegExp(r'^dart-cov-\d+-\d+.json$');
   if (FileSystemEntity.isDirectorySync(absPath)) {
     return new Directory(absPath)
@@ -223,5 +223,5 @@ List filesToProcess(String absPath) {
         .where((e) => e is File && filePattern.hasMatch(p.basename(e.path)))
         .toList();
   }
-  return [new File(absPath)];
+  return <File>[new File(absPath)];
 }

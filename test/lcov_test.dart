@@ -30,7 +30,7 @@ void main() {
     expect(hitmap, contains(_isolateLibFileUri));
     expect(hitmap, contains('package:coverage/src/util.dart'));
 
-    var sampleAppHitMap = hitmap[_sampleAppFileUri];
+    Map<int, int> sampleAppHitMap = hitmap[_sampleAppFileUri];
 
     expect(sampleAppHitMap, containsPair(41, greaterThanOrEqualTo(1)),
         reason: 'be careful if you modify the test file');

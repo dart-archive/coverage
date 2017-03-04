@@ -58,7 +58,7 @@ void main() {
     expect(hitMap, contains(_sampleAppFileUri));
 
     Map<int, int> isolateFile = hitMap[_isolateLibFileUri];
-    expect(isolateFile, {12: 1, 14: 1, 16: 3, 18: 1});
+    expect(isolateFile, {12: 1, 14: 1, 15: 3, 16: 1});
   });
 
   test('parseCoverage', () async {

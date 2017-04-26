@@ -37,12 +37,17 @@ Future<Map<String, dynamic>> collect(
     }
 
     return await _getAllCoverage(vmService, outputBuffer: outputBuffer);
-  } finally {
+  } catch (e, st) {
+    outputBuffer?.writeln("$e");
+    outputBuffer?.writeln("$st");
+  }
+  finally {
     if (resume) {
       await _resumeIsolates(vmService);
     }
     await vmService.close();
   }
+}
 }
 
 Future<Map<String, dynamic>> _getAllCoverage(VMServiceClient service, {StringSink outputBuffer}) async {

@@ -37,11 +37,7 @@ Future<Map<String, dynamic>> collect(
     }
 
     return await _getAllCoverage(vmService, outputBuffer: outputBuffer);
-  } catch (e, st) {
-    outputBuffer?.writeln("$e");
-    outputBuffer?.writeln("$st");
-  }
-  finally {
+  } finally {
     if (resume) {
       await _resumeIsolates(vmService);
     }

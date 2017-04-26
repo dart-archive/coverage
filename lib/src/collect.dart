@@ -48,7 +48,6 @@ Future<Map<String, dynamic>> collect(
     await vmService.close();
   }
 }
-}
 
 Future<Map<String, dynamic>> _getAllCoverage(VMServiceClient service, {StringSink outputBuffer}) async {
   var vm = await service.getVM();

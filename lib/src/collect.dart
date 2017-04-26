@@ -67,10 +67,12 @@ Future<Map<String, dynamic>> _getAllCoverage(VMServiceClient service, {StringSin
 Future _resumeIsolates(VMServiceClient service) async {
   var vm = await service.getVM();
   for (var isolateRef in vm.isolates) {
-    var isolate = await isolateRef.load();
-    if (isolate.isPaused) {
-      await isolateRef.resume();
-    }
+    try {
+      var isolate = await isolateRef.load();
+      if (isolate.isPaused) {
+        await isolateRef.resume();
+      }
+    } on VMSentinelException {}
   }
 }
 

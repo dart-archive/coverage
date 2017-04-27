@@ -13,13 +13,13 @@ const _retryInterval = const Duration(milliseconds: 200);
 
 Future<Map<String, dynamic>> collect(
     Uri serviceUri, bool resume, bool waitPaused,
-    {Duration timeout, StringSink outputBuffer}) async {
+    {Duration timeout, StringSink outputSink}) async {
   // Create websocket URI. Handle any trailing slashes.
   var pathSegments = serviceUri.pathSegments.where((c) => c.isNotEmpty).toList()
     ..add('ws');
   var uri = serviceUri.replace(scheme: 'ws', pathSegments: pathSegments);
 
-  outputBuffer?.writeln("Waiting for tests to complete...");
+  outputSink?.writeln("Waiting for tests to complete...");
   VMServiceClient vmService;
   await retry(() async {
     try {
@@ -33,10 +33,10 @@ Future<Map<String, dynamic>> collect(
   try {
     if (waitPaused) {
       await _waitIsolatesPaused(vmService, timeout: timeout);
-      outputBuffer?.writeln("Tests complete.");
+      outputSink?.writeln("Tests complete.");
     }
 
-    return await _getAllCoverage(vmService, outputBuffer: outputBuffer);
+    return await _getAllCoverage(vmService, outputSink: outputSink);
   } finally {
     if (resume) {
       await _resumeIsolates(vmService);
@@ -45,19 +45,19 @@ Future<Map<String, dynamic>> collect(
   }
 }
 
-Future<Map<String, dynamic>> _getAllCoverage(VMServiceClient service, {StringSink outputBuffer}) async {
+Future<Map<String, dynamic>> _getAllCoverage(VMServiceClient service, {StringSink outputSink}) async {
   var vm = await service.getVM();
   var allCoverage = <Map<String, dynamic>>[];
 
   var counter = 0;
   var total = vm.isolates.length;
   for (var isolateRef in vm.isolates) {
-    outputBuffer?.writeln("Collecting coverage for ${isolateRef.name} (${counter + 1}/$total)...");
+    outputSink?.writeln("Collecting coverage for ${isolateRef.name} (${counter + 1}/$total)...");
     var isolate = await isolateRef.load();
     var report = await isolate.getSourceReport(forceCompile: true);
     var coverage = await _getCoverageJson(service, report);
     allCoverage.addAll(coverage);
-    outputBuffer?.writeln("Coverage collected for ${isolateRef.name}, resuming termination.");
+    outputSink?.writeln("Coverage collected for ${isolateRef.name}, resuming termination.");
     await isolateRef.resume();
     counter ++;
   }

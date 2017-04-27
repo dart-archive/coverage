@@ -16,7 +16,7 @@ Future<Map<String, dynamic>> runAndCollect(String scriptPath,
     bool checked: true,
     String packageRoot,
     Duration timeout,
-    StringSink outputBuffer}) async {
+    StringSink outputSink}) async {
   var dartArgs = [
     '--enable-vm-service',
     '--pause_isolates_on_exit',
@@ -42,20 +42,20 @@ Future<Map<String, dynamic>> runAndCollect(String scriptPath,
       .transform(UTF8.decoder)
       .transform(const LineSplitter())
       .listen((line) {
-    outputBuffer?.writeln("$line");
+    outputSink?.writeln("$line");
     var uri = extractObservatoryUri(line);
     if (uri != null) {
       serviceUriCompleter.complete(uri);
     }
   });
 
-  outputBuffer?.writeln("Waiting for Observatory...");
+  outputSink?.writeln("Waiting for Observatory...");
   var serviceUri = await serviceUriCompleter.future;
 
 
   Map<String, dynamic> coverage;
   try {
-    coverage = await collect(serviceUri, true, true, timeout: timeout, outputBuffer: outputBuffer);
+    coverage = await collect(serviceUri, true, true, timeout: timeout, outputSink: outputSink);
   } finally {
     await process.stderr.drain<List<int>>();
   }

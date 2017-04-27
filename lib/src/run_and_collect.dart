@@ -52,10 +52,10 @@ Future<Map<String, dynamic>> runAndCollect(String scriptPath,
   outputSink?.writeln("Waiting for Observatory...");
   var serviceUri = await serviceUriCompleter.future;
 
-
   Map<String, dynamic> coverage;
   try {
-    coverage = await collect(serviceUri, true, true, timeout: timeout, outputSink: outputSink);
+    coverage = await collect(serviceUri, true, true,
+        timeout: timeout, outputSink: outputSink);
   } finally {
     await process.stderr.drain<List<int>>();
   }

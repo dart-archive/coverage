@@ -13,12 +13,13 @@ const _retryInterval = const Duration(milliseconds: 200);
 
 Future<Map<String, dynamic>> collect(
     Uri serviceUri, bool resume, bool waitPaused,
-    {Duration timeout}) async {
+    {Duration timeout, StringSink outputSink}) async {
   // Create websocket URI. Handle any trailing slashes.
   var pathSegments = serviceUri.pathSegments.where((c) => c.isNotEmpty).toList()
     ..add('ws');
   var uri = serviceUri.replace(scheme: 'ws', pathSegments: pathSegments);
 
+  outputSink?.writeln("Waiting for tests to complete...");
   VMServiceClient vmService;
   await retry(() async {
     try {
@@ -32,36 +33,52 @@ Future<Map<String, dynamic>> collect(
   try {
     if (waitPaused) {
       await _waitIsolatesPaused(vmService, timeout: timeout);
+      outputSink?.writeln("Tests complete.");
     }
 
-    return await _getAllCoverage(vmService);
+    return await _getAllCoverage(vmService, outputSink: outputSink);
   } finally {
     if (resume) {
-      await _resumeIsolates(vmService);
+      await _resumeIsolates(vmService, outputSink: outputSink);
     }
+    outputSink?.writeln("Closing VM service.");
     await vmService.close();
+    outputSink?.writeln("VM service closed.");
   }
 }
 
-Future<Map<String, dynamic>> _getAllCoverage(VMServiceClient service) async {
+Future<Map<String, dynamic>> _getAllCoverage(VMServiceClient service,
+    {StringSink outputSink}) async {
   var vm = await service.getVM();
   var allCoverage = <Map<String, dynamic>>[];
 
+  var counter = 0;
+  var total = vm.isolates.length;
   for (var isolateRef in vm.isolates) {
+    outputSink?.writeln(
+        "Collecting coverage for ${isolateRef.name} (${counter + 1}/$total)...");
     var isolate = await isolateRef.load();
     var report = await isolate.getSourceReport(forceCompile: true);
     var coverage = await _getCoverageJson(service, report);
     allCoverage.addAll(coverage);
+    outputSink?.writeln(
+        "Coverage collected for ${isolateRef.name}, resuming termination.");
+    await isolateRef.resume();
+    counter++;
   }
-  return {'type': 'CodeCoverage', 'coverage': allCoverage};
+  return <String, dynamic>{'type': 'CodeCoverage', 'coverage': allCoverage};
 }
 
-Future _resumeIsolates(VMServiceClient service) async {
+Future _resumeIsolates(VMServiceClient service, {StringSink outputSink}) async {
   var vm = await service.getVM();
   for (var isolateRef in vm.isolates) {
-    var isolate = await isolateRef.load();
-    if (isolate.isPaused) {
-      await isolateRef.resume();
+    try {
+      var isolate = await isolateRef.load();
+      if (isolate.isPaused) {
+        await isolateRef.resume();
+      }
+    } on VMSentinelException catch (e) {
+      outputSink?.writeln("_resumeIsolates: $e");
     }
   }
 }
@@ -83,7 +100,7 @@ Future<List<Map<String, dynamic>>> _getCoverageJson(
     VMServiceClient service, VMSourceReport report) async {
   var scriptRefs = report.ranges.map((r) => r.script).toSet();
   var scripts = new Map<Uri, VMScript>.fromIterable(
-      await Future.wait(scriptRefs.map((ref) => ref.load()).toList()),
+      await Future.wait<VMScript>(scriptRefs.map((ref) => ref.load()).toList()),
       key: (VMScript s) => s.uri);
 
   // script uri -> { line -> hit count }

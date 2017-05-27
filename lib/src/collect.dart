@@ -39,9 +39,11 @@ Future<Map<String, dynamic>> collect(
     return await _getAllCoverage(vmService, outputSink: outputSink);
   } finally {
     if (resume) {
-      await _resumeIsolates(vmService);
+      await _resumeIsolates(vmService, outputSink: outputSink);
     }
+    outputSink?.writeln("Closing VM service.");
     await vmService.close();
+    outputSink?.writeln("VM service closed.");
   }
 }
 
@@ -67,7 +69,7 @@ Future<Map<String, dynamic>> _getAllCoverage(VMServiceClient service,
   return <String, dynamic>{'type': 'CodeCoverage', 'coverage': allCoverage};
 }
 
-Future _resumeIsolates(VMServiceClient service) async {
+Future _resumeIsolates(VMServiceClient service, {StringSink outputSink}) async {
   var vm = await service.getVM();
   for (var isolateRef in vm.isolates) {
     try {
@@ -75,7 +77,9 @@ Future _resumeIsolates(VMServiceClient service) async {
       if (isolate.isPaused) {
         await isolateRef.resume();
       }
-    } on VMSentinelException {}
+    } on VMSentinelException catch (e) {
+      outputSink?.writeln("_resumeIsolates: $e");
+    }
   }
 }
 

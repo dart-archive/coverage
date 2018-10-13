@@ -158,9 +158,9 @@ class Loader {
 
   /// Loads an imported resource and returns a [Future] with a [List] of lines.
   /// Returns `null` if the resource could not be loaded.
-  Future<List<String>> load(String path) async {
+  List<String> load(String path) {
     try {
-      return new File(path).readAsLines();
+      return new File(path).readAsLinesSync();
     } catch (_) {
       failed.add(path);
       return null;

@@ -94,7 +94,7 @@ class PrettyPrintFormatter implements Formatter {
         continue;
       }
 
-      var lines = await loader.load(source);
+      var lines = loader.load(source);
       if (lines == null) {
         continue;
       }

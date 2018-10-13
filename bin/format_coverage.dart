@@ -58,12 +58,11 @@ Future<Null> main(List<String> arguments) async {
           sdkRoot: env.sdkRoot);
   var loader = new Loader();
   if (env.prettyPrint) {
-    output =
-        await new PrettyPrintFormatter(resolver, loader, reportOn: env.reportOn)
-            .format(hitmap);
+    output = new PrettyPrintFormatter(resolver, loader, reportOn: env.reportOn)
+        .format(hitmap);
   } else {
     assert(env.lcov);
-    output = await new LcovFormatter(resolver,
+    output = new LcovFormatter(resolver,
             reportOn: env.reportOn, basePath: env.baseDirectory)
         .format(hitmap);
   }

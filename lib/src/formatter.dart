@@ -10,7 +10,7 @@ import 'resolver.dart';
 
 abstract class Formatter {
   /// Returns the formatted coverage data.
-  String format(Map hitmap);
+  String format(Map<String, Map<int, int>> hitmap);
 }
 
 /// Converts the given hitmap to lcov format and appends the result to
@@ -31,10 +31,10 @@ class LcovFormatter implements Formatter {
   final List<String> reportOn;
 
   @override
-  String format(Map hitmap) {
+  String format(Map<String, Map<int, int>> hitmap) {
     _PathFilter pathFilter = _getPathFilter(reportOn);
     var buf = new StringBuffer();
-    for (var key in hitmap.keys) {
+    for (String key in hitmap.keys) {
       Map<int, int> v = hitmap[key];
       var source = resolver.resolve(key);
       if (source == null) {
@@ -80,7 +80,7 @@ class PrettyPrintFormatter implements Formatter {
   final List<String> reportOn;
 
   @override
-  String format(Map hitmap) {
+  String format(Map<String, Map<int, int>> hitmap) {
     _PathFilter pathFilter = _getPathFilter(reportOn);
     var buf = new StringBuffer();
     for (var key in hitmap.keys) {

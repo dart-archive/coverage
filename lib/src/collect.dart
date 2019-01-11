@@ -12,6 +12,8 @@ const _retryInterval = const Duration(milliseconds: 200);
 Future<Map<String, dynamic>> collect(
     Uri serviceUri, bool resume, bool waitPaused,
     {Duration timeout}) async {
+  if (serviceUri == null) throw ArgumentError('serviceUri must not be null');
+
   // Create websocket URI. Handle any trailing slashes.
   var pathSegments = serviceUri.pathSegments.where((c) => c.isNotEmpty).toList()
     ..add('ws');

@@ -44,7 +44,8 @@ Future<Null> main(List<String> arguments) async {
   }
 
   var clock = new Stopwatch()..start();
-  var hitmap = await parseCoverage(files, env.workers, checkIgnoredLines: env.checkIgnore);
+  var hitmap = await parseCoverage(files, env.workers,
+      checkIgnoredLines: env.checkIgnore);
 
   // All workers are done. Process the data.
   if (env.verbose) {
@@ -124,10 +125,11 @@ Environment parseArgs(List<String> arguments) {
       abbr: 'l',
       negatable: false,
       help: 'convert coverage data to lcov format');
-  parser.addFlag('check-ignore',
-      abbr: 'c',
-      negatable: false,
-      help: 'check for coverage ignore comments',
+  parser.addFlag(
+    'check-ignore',
+    abbr: 'c',
+    negatable: false,
+    help: 'check for coverage ignore comments',
   );
   parser.addFlag('verbose',
       abbr: 'v', negatable: false, help: 'verbose output');

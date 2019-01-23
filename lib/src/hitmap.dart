@@ -8,7 +8,8 @@ import 'dart:io';
 
 import 'resolver.dart';
 
-Future<List<int>> _getIgnoredLines(String source, Resolver resolver, Loader loader) async {
+Future<List<int>> _getIgnoredLines(
+    String source, Resolver resolver, Loader loader) async {
   final ignoredLines = new List<int>();
 
   final lines = await loader.load(resolver.resolve(source));
@@ -38,7 +39,8 @@ Future<List<int>> _getIgnoredLines(String source, Resolver resolver, Loader load
 /// are not resolvable.
 ///
 /// `jsonResult` is expected to be a List<Map<String, dynamic>>.
-Future<Map<String, Map<int, int>>> createHitmap(List jsonResult, { bool checkIgnoredLines: false }) async {
+Future<Map<String, Map<int, int>>> createHitmap(List jsonResult,
+    {bool checkIgnoredLines: false}) async {
   // Map of source file to map of line to hit count for that line.
   var globalHitMap = <String, Map<int, int>>{};
   final resolver = new Resolver();
@@ -56,7 +58,9 @@ Future<Map<String, Map<int, int>>> createHitmap(List jsonResult, { bool checkIgn
       continue;
     }
 
-    final ignoredLines = checkIgnoredLines ? await _getIgnoredLines(source, resolver, loader) : new List<int>();
+    final ignoredLines = checkIgnoredLines
+        ? await _getIgnoredLines(source, resolver, loader)
+        : new List<int>();
 
     var sourceHitMap = globalHitMap.putIfAbsent(source, () => <int, int>{});
     List<dynamic> hits = e['hits'];
@@ -107,14 +111,17 @@ void mergeHitmaps(
 }
 
 /// Generates a merged hitmap from a set of coverage JSON files.
-Future<Map> parseCoverage(Iterable<File> files, int _, {
+Future<Map> parseCoverage(
+  Iterable<File> files,
+  int _, {
   bool checkIgnoredLines: false,
 }) async {
   var globalHitmap = <String, Map<int, int>>{};
   for (var file in files) {
     String contents = file.readAsStringSync();
     List jsonResult = json.decode(contents)['coverage'];
-    Map<String, Map<int, int>> hitmap = await createHitmap(jsonResult, checkIgnoredLines: checkIgnoredLines);
+    Map<String, Map<int, int>> hitmap =
+        await createHitmap(jsonResult, checkIgnoredLines: checkIgnoredLines);
     mergeHitmaps(hitmap, globalHitmap);
   }
   return globalHitmap;

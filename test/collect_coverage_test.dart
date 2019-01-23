@@ -63,12 +63,55 @@ void main() {
       17: 1,
       18: 1,
       20: 0,
-      27: 1,
-      29: 1,
-      30: 2,
-      31: 1,
-      32: 3,
+      24: 0,
+      25: 0,
+      32: 1,
       33: 1,
+      35: 1,
+      36: 2,
+      37: 1,
+      38: 3,
+      39: 1,
+      42: 1,
+    };
+    if (Platform.version.startsWith('1.')) {
+      // Dart VMs prior to 2.0.0-dev.5.0 contain a bug that emits coverage on the
+      // closing brace of async function blocks.
+      // See: https://github.com/dart-lang/coverage/issues/196
+      expectedHits[21] = 0; // coverage:ignore-line
+    } else {
+      // Dart VMs version 2.0.0-dev.6.0 mark the opening brace of a function as
+      // coverable.
+      expectedHits[9] = 1;
+      expectedHits[16] = 1;
+      expectedHits[32] = 1;
+      expectedHits[36] = 3;
+    }
+    expect(isolateFile, expectedHits);
+  });
+
+  test('createHitmap with ignored lines', () async {
+    var resultString = await _getCoverageResult();
+    Map<String, dynamic> jsonResult = json.decode(resultString);
+    List coverage = jsonResult['coverage'];
+    var hitMap = await createHitmap(coverage, checkIgnoredLines: true);
+    expect(hitMap, contains(_sampleAppFileUri));
+
+    Map<int, int> isolateFile = hitMap[_isolateLibFileUri];
+    Map<int, int> expectedHits = {
+      10: 1,
+      11: 1,
+      13: 0,
+      17: 1,
+      18: 1,
+      20: 0,
+      32: 1,
+      33: 1,
+      35: 1,
+      36: 2,
+      37: 1,
+      38: 3,
+      39: 1,
     };
     if (Platform.version.startsWith('1.')) {
       // Dart VMs prior to 2.0.0-dev.5.0 contain a bug that emits coverage on the
@@ -80,8 +123,8 @@ void main() {
       // coverable.
       expectedHits[9] = 1;
       expectedHits[16] = 1;
-      expectedHits[26] = 1;
-      expectedHits[30] = 3;
+      expectedHits[32] = 1;
+      expectedHits[36] = 3;
     }
     expect(isolateFile, expectedHits);
   });

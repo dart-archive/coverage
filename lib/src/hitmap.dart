@@ -11,23 +11,19 @@ import 'resolver.dart';
 Future<List<int>> _getIgnoredLines(String source, Resolver resolver, Loader loader) async {
   final ignoredLines = new List<int>();
 
-  final resolvedPathFile = resolver.resolve(source);
-  if (resolvedPathFile == null) {
-    return ignoredLines;
-  }
-
-  final lines = await loader.load(resolvedPathFile);
+  final lines = await loader.load(resolver.resolve(source));
   if (lines == null) {
     return ignoredLines;
   }
-  var skipping = false;
+
+  var ignoring = false;
 
   for (var i = 0; i < lines.length; i++) {
-    if (skipping) {
+    if (ignoring) {
       ignoredLines.add(i + 1);
-      skipping = !lines[i].contains("// coverage:ignore-end");
+      ignoring = !lines[i].contains("// coverage:ignore-end");
     } else {
-      skipping = lines[i].contains("// coverage:ignore-start");
+      ignoring = lines[i].contains("// coverage:ignore-start");
     }
 
     if (lines[i].contains("// coverage:ignore-line")) {
@@ -42,11 +38,11 @@ Future<List<int>> _getIgnoredLines(String source, Resolver resolver, Loader load
 /// are not resolvable.
 ///
 /// `jsonResult` is expected to be a List<Map<String, dynamic>>.
-Future<Map<String, Map<int, int>>> createHitmap(List jsonResult) async {
+Future<Map<String, Map<int, int>>> createHitmap(List jsonResult, { bool checkIgnoredLines: false }) async {
   // Map of source file to map of line to hit count for that line.
   var globalHitMap = <String, Map<int, int>>{};
-  var resolver = new Resolver();
-  var loader = new Loader();
+  final resolver = new Resolver();
+  final loader = new Loader();
 
   void addToMap(Map<int, int> map, int line, int count) {
     var oldCount = map.putIfAbsent(line, () => 0);
@@ -60,7 +56,7 @@ Future<Map<String, Map<int, int>>> createHitmap(List jsonResult) async {
       continue;
     }
 
-    final ignoredLines = await _getIgnoredLines(source, resolver, loader);
+    final ignoredLines = checkIgnoredLines ? await _getIgnoredLines(source, resolver, loader) : new List<int>();
 
     var sourceHitMap = globalHitMap.putIfAbsent(source, () => <int, int>{});
     List<dynamic> hits = e['hits'];
@@ -111,12 +107,14 @@ void mergeHitmaps(
 }
 
 /// Generates a merged hitmap from a set of coverage JSON files.
-Future<Map> parseCoverage(Iterable<File> files, int _) async {
+Future<Map> parseCoverage(Iterable<File> files, int _, {
+  bool checkIgnoredLines: false,
+}) async {
   var globalHitmap = <String, Map<int, int>>{};
   for (var file in files) {
     String contents = file.readAsStringSync();
     List jsonResult = json.decode(contents)['coverage'];
-    Map<String, Map<int, int>> hitmap = await createHitmap(jsonResult);
+    Map<String, Map<int, int>> hitmap = await createHitmap(jsonResult, checkIgnoredLines: checkIgnoredLines);
     mergeHitmaps(hitmap, globalHitmap);
   }
   return globalHitmap;

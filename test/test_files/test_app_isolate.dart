@@ -20,6 +20,12 @@ Future<String> fooAsync(int x) async {
   return new List.generate(x, (_) => 'xyzzy').join(' ');
 }
 
+// coverage:ignore-start
+int fooUnusedIgnoredSync(int a, int b) {
+  return a + b;
+}
+// coverage:ignore-end
+
 /// The number of covered lines is tested and expected to be 4.
 ///
 /// If you modify this method, you may have to update the tests!
@@ -35,9 +41,3 @@ void isolateTask(dynamic threeThings) {
 
   print("Ignored line."); // coverage:ignore-line
 }
-
-// coverage:ignore-start
-int fooUnusedIgnoredSync(int a, int b) {
-  return a + b;
-}
-// coverage:ignore-enc

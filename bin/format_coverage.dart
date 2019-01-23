@@ -25,6 +25,7 @@ class Environment {
   bool lcov;
   bool expectMarkers;
   bool verbose;
+  bool checkIgnore;
 }
 
 Future<Null> main(List<String> arguments) async {
@@ -39,10 +40,11 @@ Future<Null> main(List<String> arguments) async {
     print('  package-root: ${env.pkgRoot}');
     print('  package-spec: ${env.packagesPath}');
     print('  report-on: ${env.reportOn}');
+    print('  check-ignore: ${env.checkIgnore}');
   }
 
   var clock = new Stopwatch()..start();
-  var hitmap = await parseCoverage(files, env.workers);
+  var hitmap = await parseCoverage(files, env.workers, checkIgnoredLines: env.checkIgnore);
 
   // All workers are done. Process the data.
   if (env.verbose) {
@@ -122,6 +124,11 @@ Environment parseArgs(List<String> arguments) {
       abbr: 'l',
       negatable: false,
       help: 'convert coverage data to lcov format');
+  parser.addFlag('check-ignore',
+      abbr: 'c',
+      negatable: false,
+      help: 'check for coverage ignore comments',
+  );
   parser.addFlag('verbose',
       abbr: 'v', negatable: false, help: 'verbose output');
   parser.addFlag('help', abbr: 'h', negatable: false, help: 'show this help');
@@ -205,6 +212,8 @@ Environment parseArgs(List<String> arguments) {
   }
   // Use pretty-print either explicitly or by default.
   env.prettyPrint = !env.lcov;
+
+  env.checkIgnore = args['check-ignore'];
 
   try {
     env.workers = int.parse('${args["workers"]}');

@@ -21,8 +21,8 @@ Future<String> fooAsync(int x) async {
 }
 
 // coverage:ignore-start
-int fooUnusedIgnoredSync(int a, int b) {
-  return a + b;
+int fooUnusedIgnoredSync(int a, int b, int c) {
+  return a + b + c;
 }
 // coverage:ignore-end
 

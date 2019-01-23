@@ -32,4 +32,12 @@ void isolateTask(dynamic threeThings) {
     int sum = threeThings[1] + threeThings[2];
     port.send(sum);
   });
+
+  print("Ignored line."); // coverage:ignore-line
 }
+
+// coverage:ignore-start
+int fooUnusedIgnoredSync(int a, int b) {
+  return a + b;
+}
+// coverage:ignore-enc

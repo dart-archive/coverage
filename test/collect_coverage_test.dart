@@ -52,7 +52,7 @@ void main() {
     var resultString = await _getCoverageResult();
     Map<String, dynamic> jsonResult = json.decode(resultString);
     List coverage = jsonResult['coverage'];
-    var hitMap = createHitmap(coverage);
+    var hitMap = await createHitmap(coverage);
     expect(hitMap, contains(_sampleAppFileUri));
 
     Map<int, int> isolateFile = hitMap[_isolateLibFileUri];

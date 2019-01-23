@@ -6,13 +6,47 @@ import 'dart:async';
 import 'dart:convert' show json;
 import 'dart:io';
 
+import 'resolver.dart';
+
+Future<List<int>> _getIgnoredLines(String source, Resolver resolver, Loader loader) async {
+  final ignoredLines = new List<int>();
+
+  final resolvedPathFile = resolver.resolve(source);
+  if (resolvedPathFile == null) {
+    return ignoredLines;
+  }
+
+  final lines = await loader.load(resolvedPathFile);
+  if (lines == null) {
+    return ignoredLines;
+  }
+  var skipping = false;
+
+  for (var i = 0; i < lines.length; i++) {
+    if (skipping) {
+      ignoredLines.add(i + 1);
+      skipping = !lines[i].contains("// coverage:ignore-end");
+    } else {
+      skipping = lines[i].contains("// coverage:ignore-start");
+    }
+
+    if (lines[i].contains("// coverage:ignore-line")) {
+      ignoredLines.add(i + 1);
+    }
+  }
+
+  return ignoredLines;
+}
+
 /// Creates a single hitmap from a raw json object. Throws away all entries that
 /// are not resolvable.
 ///
 /// `jsonResult` is expected to be a List<Map<String, dynamic>>.
-Map<String, Map<int, int>> createHitmap(List jsonResult) {
+Future<Map<String, Map<int, int>>> createHitmap(List jsonResult) async {
   // Map of source file to map of line to hit count for that line.
   var globalHitMap = <String, Map<int, int>>{};
+  var resolver = new Resolver();
+  var loader = new Loader();
 
   void addToMap(Map<int, int> map, int line, int count) {
     var oldCount = map.putIfAbsent(line, () => 0);
@@ -26,6 +60,8 @@ Map<String, Map<int, int>> createHitmap(List jsonResult) {
       continue;
     }
 
+    final ignoredLines = await _getIgnoredLines(source, resolver, loader);
+
     var sourceHitMap = globalHitMap.putIfAbsent(source, () => <int, int>{});
     List<dynamic> hits = e['hits'];
     // hits is a flat array of the following format:
@@ -36,7 +72,9 @@ Map<String, Map<int, int>> createHitmap(List jsonResult) {
       dynamic k = hits[i];
       if (k is num) {
         // Single line.
-        addToMap(sourceHitMap, k, hits[i + 1]);
+        if (!ignoredLines.contains(k)) {
+          addToMap(sourceHitMap, k, hits[i + 1]);
+        }
       } else {
         assert(k is String);
         // Linerange. We expand line ranges to actual lines at this point.
@@ -44,7 +82,9 @@ Map<String, Map<int, int>> createHitmap(List jsonResult) {
         int start = int.parse(k.substring(0, splitPos));
         int end = int.parse(k.substring(splitPos + 1));
         for (var j = start; j <= end; j++) {
-          addToMap(sourceHitMap, j, hits[i + 1]);
+          if (!ignoredLines.contains(k)) {
+            addToMap(sourceHitMap, j, hits[i + 1]);
+          }
         }
       }
     }
@@ -76,7 +116,8 @@ Future<Map> parseCoverage(Iterable<File> files, int _) async {
   for (var file in files) {
     String contents = file.readAsStringSync();
     List jsonResult = json.decode(contents)['coverage'];
-    mergeHitmaps(createHitmap(jsonResult), globalHitmap);
+    Map<String, Map<int, int>> hitmap = await createHitmap(jsonResult);
+    mergeHitmaps(hitmap, globalHitmap);
   }
   return globalHitmap;
 }

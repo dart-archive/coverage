@@ -20,7 +20,7 @@ Future<Null> main(List<String> arguments) async {
   var options = _parseArgs(arguments);
   await Chain.capture(() async {
     var coverage = await collect(
-        options.serviceUri, options.resume, options.waitPaused,
+        options.serviceUri, options.resume, options.waitPaused, options.onExit,
         timeout: options.timeout);
     options.out.write(json.encode(coverage));
     await options.out.close();
@@ -35,12 +35,13 @@ Future<Null> main(List<String> arguments) async {
 
 class Options {
   Options(
-      this.serviceUri, this.out, this.timeout, this.waitPaused, this.resume);
+      this.serviceUri, this.out, this.timeout, this.waitPaused, this.onExit, this.resume);
 
   final Uri serviceUri;
   final IOSink out;
   final Duration timeout;
   final bool waitPaused;
+  final bool onExit;
   final bool resume;
 }
 
@@ -65,6 +66,10 @@ Options _parseArgs(List<String> arguments) {
         help: 'wait for all isolates to be paused before collecting coverage')
     ..addFlag('resume-isolates',
         abbr: 'r', defaultsTo: false, help: 'resume all isolates on exit')
+    ..addFlag('on-exit',
+        abbr: 'e',
+        defaultsTo: false,
+        help: 'collect coverage whenever an isolate exits')
     ..addFlag('help', abbr: 'h', negatable: false, help: 'show this help');
 
   var args = parser.parse(arguments);
@@ -109,5 +114,5 @@ Options _parseArgs(List<String> arguments) {
       ? null
       : new Duration(seconds: int.parse(args['connect-timeout']));
   return new Options(
-      serviceUri, out, timeout, args['wait-paused'], args['resume-isolates']);
+      serviceUri, out, timeout, args['wait-paused'], args['on-exit'], args['resume-isolates']);
 }

@@ -63,7 +63,6 @@ Future<Map<String, dynamic>> collect(
 
 Future<Map<String, dynamic>> _getAllCoverageOnExit(
     VMServiceClient service, bool resumeIsolates) async {
-
   Map<VMIsolateRef, StreamSubscription> _exitSubscriptions = {};
   var allCoverage = <Map<String, dynamic>>[];
   var completer = Completer<Map<String, dynamic>>();
@@ -73,7 +72,6 @@ Future<Map<String, dynamic>> _getAllCoverageOnExit(
     var sub = isolate.onPauseOrResume
         .where((event) => event is VMPauseExitEvent)
         .listen((event) async {
-          
       allCoverage.addAll(await _collectCoverage(service, isolate));
       await _exitSubscriptions.remove(isolate).cancel();
 

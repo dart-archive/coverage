@@ -34,8 +34,8 @@ Future<Null> main(List<String> arguments) async {
 }
 
 class Options {
-  Options(
-      this.serviceUri, this.out, this.timeout, this.waitPaused, this.onExit, this.resume);
+  Options(this.serviceUri, this.out, this.timeout, this.waitPaused, this.onExit,
+      this.resume);
 
   final Uri serviceUri;
   final IOSink out;
@@ -113,6 +113,6 @@ Options _parseArgs(List<String> arguments) {
   var timeout = (args['connect-timeout'] == null)
       ? null
       : new Duration(seconds: int.parse(args['connect-timeout']));
-  return new Options(
-      serviceUri, out, timeout, args['wait-paused'], args['on-exit'], args['resume-isolates']);
+  return new Options(serviceUri, out, timeout, args['wait-paused'],
+      args['on-exit'], args['resume-isolates']);
 }

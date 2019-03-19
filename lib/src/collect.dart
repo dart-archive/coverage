@@ -54,7 +54,7 @@ Future<Map<String, dynamic>> collect(
       return await _getAllCoverage(vmService);
     }
   } finally {
-    if (resume) {
+    if (resume && !onExit) {
       await _resumeIsolates(vmService);
     }
     await vmService.close();
@@ -68,30 +68,36 @@ Future<Map<String, dynamic>> _getAllCoverageOnExit(
   var completer = Completer<Map<String, dynamic>>();
   StreamSubscription isolateStartSubscription;
 
-  void trackIsolate(VMIsolateRef isolate) {
-    var sub = isolate.onPauseOrResume
-        .where((event) => event is VMPauseExitEvent)
-        .listen((event) async {
+  void trackIsolate(VMIsolateRef isolate) async {
+    var data = await isolate.load();
+    if (data.pauseEvent is VMPauseExitEvent) {
+      // already paused
       allCoverage.addAll(await _collectCoverage(service, isolate));
-      await _exitSubscriptions.remove(isolate).cancel();
+    } else {
+      var sub = isolate.onPauseOrResume
+          .where((event) => event is VMPauseExitEvent)
+          .listen((event) async {
+        allCoverage.addAll(await _collectCoverage(service, isolate));
+        await _exitSubscriptions.remove(isolate).cancel();
 
-      if (resumeIsolates) {
-        await isolate.resume();
-      }
+        if (resumeIsolates) {
+          await isolate.resume();
+        }
 
-      if (_exitSubscriptions.isEmpty) {
-        // all isolates exited
-        await isolateStartSubscription.cancel();
-        completer.complete(
-          <String, dynamic>{
-            'type': 'CodeCoverage',
-            'coverage': allCoverage,
-          },
-        );
-      }
-    });
+        if (_exitSubscriptions.isEmpty) {
+          // all isolates exited
+          await isolateStartSubscription.cancel();
+          completer.complete(
+            <String, dynamic>{
+              'type': 'CodeCoverage',
+              'coverage': allCoverage,
+            },
+          );
+        }
+      });
 
-    _exitSubscriptions[isolate] = sub;
+      _exitSubscriptions[isolate] = sub;
+    }
   }
 
   // track isolates as they are started, also track isolates that are already

@@ -28,125 +28,183 @@ Future<Map<String, dynamic>> collect(
     {Duration timeout}) async {
   if (serviceUri == null) throw ArgumentError('serviceUri must not be null');
 
-  // Create websocket URI. Handle any trailing slashes.
-  var pathSegments = serviceUri.pathSegments.where((c) => c.isNotEmpty).toList()
-    ..add('ws');
-  var uri = serviceUri.replace(scheme: 'ws', pathSegments: pathSegments);
+  _CoverageCollector collector;
+  if (onExit) {
+    collector = _OnExitCollector(serviceUri, resume, timeout: timeout);
+  } else {
+    collector =
+        _OneTimeCollector(serviceUri, waitPaused, resume, timeout: timeout);
+  }
+
+  return await collector.collect();
+}
+
+abstract class _CoverageCollector {
+  _CoverageCollector(this.serviceUri, {this.timeout}) {
+    if (serviceUri == null) throw ArgumentError('serviceUri must not be null');
+  }
+
+  final List<Map<String, dynamic>> _collectedCoverage = [];
+
+  final Duration timeout;
+  final Uri serviceUri;
 
   VMServiceClient vmService;
-  await retry(() async {
+
+  Future<VMServiceClient> connectToVMService() async {
+    // Create websocket URI. Handle any trailing slashes.
+    var pathSegments =
+        serviceUri.pathSegments.where((c) => c.isNotEmpty).toList()..add('ws');
+    var uri = serviceUri.replace(scheme: 'ws', pathSegments: pathSegments);
+
+    return await retry<VMServiceClient>(() async {
+      try {
+        var vmService = new VMServiceClient.connect(uri);
+        await vmService.getVM().timeout(_retryInterval);
+        return vmService;
+      } on TimeoutException {
+        vmService.close();
+        rethrow;
+      }
+    }, _retryInterval, timeout: timeout);
+  }
+
+  Future prepare();
+  Future collectCoverage();
+  Future tearDown();
+
+  Future<Map<String, dynamic>> collect() async {
+    vmService = await connectToVMService();
+
     try {
-      vmService = new VMServiceClient.connect(uri);
-      await vmService.getVM().timeout(_retryInterval);
-    } on TimeoutException {
-      vmService.close();
-      rethrow;
-    }
-  }, _retryInterval, timeout: timeout);
-  try {
-    if (waitPaused) {
-      await _waitIsolatesPaused(vmService, timeout: timeout);
+      await prepare();
+      await collectCoverage();
+    } finally {
+      await tearDown();
+      await vmService.close();
     }
 
-    if (onExit) {
-      return await _getAllCoverageOnExit(vmService, resume);
-    } else {
-      return await _getAllCoverage(vmService);
-    }
-  } finally {
-    if (resume && !onExit) {
-      await _resumeIsolates(vmService);
-    }
-    await vmService.close();
-  }
-}
-
-Future<Map<String, dynamic>> _getAllCoverageOnExit(
-    VMServiceClient service, bool resumeIsolates) async {
-  Map<VMIsolateRef, StreamSubscription> _exitSubscriptions = {};
-  var allCoverage = <Map<String, dynamic>>[];
-  var completer = Completer<Map<String, dynamic>>();
-  StreamSubscription isolateStartSubscription;
-
-  void trackIsolate(VMIsolateRef isolate) async {
-    var data = await isolate.load();
-    if (data.pauseEvent is VMPauseExitEvent) {
-      // already paused
-      allCoverage.addAll(await _collectCoverage(service, isolate));
-    } else {
-      var sub = isolate.onPauseOrResume
-          .where((event) => event is VMPauseExitEvent)
-          .listen((event) async {
-        allCoverage.addAll(await _collectCoverage(service, isolate));
-        await _exitSubscriptions.remove(isolate).cancel();
-
-        if (resumeIsolates) {
-          await isolate.resume();
-        }
-
-        if (_exitSubscriptions.isEmpty) {
-          // all isolates exited
-          await isolateStartSubscription.cancel();
-          completer.complete(
-            <String, dynamic>{
-              'type': 'CodeCoverage',
-              'coverage': allCoverage,
-            },
-          );
-        }
-      });
-
-      _exitSubscriptions[isolate] = sub;
-    }
+    return <String, dynamic>{
+      'type': 'CodeCoverage',
+      'coverage': _collectedCoverage,
+    };
   }
 
-  // track isolates as they are started, also track isolates that are already
-  // running
-  isolateStartSubscription = service.onIsolateStart.listen(trackIsolate);
-
-  var vm = await service.getVM();
-  vm.isolates.forEach(trackIsolate);
-
-  return completer.future;
-}
-
-Future<Map<String, dynamic>> _getAllCoverage(VMServiceClient service) async {
-  var vm = await service.getVM();
-  var allCoverage = <Map<String, dynamic>>[];
-
-  for (var isolateRef in vm.isolates) {
-    allCoverage.addAll(await _collectCoverage(service, isolateRef));
-  }
-  return <String, dynamic>{'type': 'CodeCoverage', 'coverage': allCoverage};
-}
-
-Future<List<Map<String, dynamic>>> _collectCoverage(
-    VMServiceClient service, VMIsolateRef isolateRef) async {
-  var isolate = await isolateRef.load();
-  var report = await isolate.getSourceReport(forceCompile: true);
-  return await _getCoverageJson(service, report);
-}
-
-Future _resumeIsolates(VMServiceClient service) async {
-  var vm = await service.getVM();
-  for (var isolateRef in vm.isolates) {
+  Future<void> collectFromIsolate(VMIsolateRef isolateRef) async {
     var isolate = await isolateRef.load();
-    if (isolate.isPaused) {
-      await isolateRef.resume();
+    var report = await isolate.getSourceReport(forceCompile: true);
+    var coverage = await _getCoverageJson(vmService, report);
+
+    _collectedCoverage.addAll(coverage);
+  }
+}
+
+/// Collects coverage once, optionally waiting until all isolates have paused
+/// and optionally resuming them afterwards.
+class _OneTimeCollector extends _CoverageCollector {
+  _OneTimeCollector(Uri serviceUri, this.waitPaused, this.resume,
+      {Duration timeout})
+      : super(serviceUri, timeout: timeout);
+
+  final bool waitPaused;
+  final bool resume;
+
+  @override
+  Future prepare() {
+    if (waitPaused) {
+      Future<void> allPaused() async {
+        var vm = await vmService.getVM();
+        for (var isolateRef in vm.isolates) {
+          var isolate = await isolateRef.load();
+          if (!isolate.isPaused) throw "Unpaused isolates remaining.";
+        }
+      }
+
+      return retry<void>(allPaused, _retryInterval, timeout: timeout);
+    }
+
+    return Future<void>.value(null);
+  }
+
+  @override
+  Future collectCoverage() async {
+    var vm = await vmService.getVM();
+
+    for (var isolateRef in vm.isolates) {
+      await collectFromIsolate(isolateRef);
+    }
+  }
+
+  @override
+  Future tearDown() async {
+    if (resume) {
+      var vm = await vmService.getVM();
+      for (var isolateRef in vm.isolates) {
+        var isolate = await isolateRef.load();
+        if (isolate.isPaused) {
+          await isolateRef.resume();
+        }
+      }
     }
   }
 }
 
-Future _waitIsolatesPaused(VMServiceClient service, {Duration timeout}) async {
-  Future allPaused() async {
-    var vm = await service.getVM();
-    for (var isolateRef in vm.isolates) {
-      var isolate = await isolateRef.load();
-      if (!isolate.isPaused) throw "Unpaused isolates remaining.";
+/// Collects coverage when isolates pause before exiting, optionally resuming
+/// them afterwards.
+class _OnExitCollector extends _CoverageCollector {
+  _OnExitCollector(Uri serviceUri, this.resume, {Duration timeout})
+      : super(serviceUri, timeout: timeout);
+
+  final bool resume;
+  final Completer<void> _completer = Completer();
+
+  Map<VMIsolateRef, StreamSubscription> _exitSubscriptions = {};
+  StreamSubscription _isolateStartSubscription;
+
+  @override
+  Future prepare() async {}
+
+  @override
+  Future collectCoverage() async {
+    // Track all active isolates, also track isolates when they are started
+    var vm = await vmService.getVM();
+    vm.isolates.forEach(_trackIsolate);
+
+    _isolateStartSubscription = vmService.onIsolateStart.listen(_trackIsolate);
+
+    return _completer.future;
+  }
+
+  Future _trackIsolate(VMIsolateRef isolate) async {
+    // check if the isolate is already paused
+    var isolateData = await isolate.load();
+    if (isolateData.pauseEvent is VMPauseExitEvent) {
+      await collectFromIsolate(isolate);
+    } else {
+      // collect coverage when the isolate is about to exit
+      _exitSubscriptions[isolate] = isolate.onPauseOrResume
+          .where((event) => event is VMPauseExitEvent)
+          .listen((_) async => await _collectFromExitingIsolate(isolate));
     }
   }
 
-  return retry(allPaused, _retryInterval, timeout: timeout);
+  Future _collectFromExitingIsolate(VMIsolateRef isolate) async {
+    await _exitSubscriptions.remove(isolate).cancel();
+    await collectFromIsolate(isolate);
+
+    if (resume) {
+      await isolate.resume();
+    }
+
+    if (_exitSubscriptions.isEmpty) {
+      // all isolates finished, done collecting coverage
+      await _isolateStartSubscription.cancel();
+      _completer.complete(null);
+    }
+  }
+
+  @override
+  Future tearDown() async {}
 }
 
 /// Returns a JSON coverage list backward-compatible with pre-1.16.0 SDKs.

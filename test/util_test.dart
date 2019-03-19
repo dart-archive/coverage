@@ -15,7 +15,7 @@ void main() {
     int count = 0;
     var stopwatch = new Stopwatch()..start();
 
-    Future failCountTimes() async {
+    Future<int> failCountTimes() async {
       expect(stopwatch.elapsed, greaterThanOrEqualTo(_delay * count));
 
       while (count < _failCount) {
@@ -37,7 +37,7 @@ void main() {
       int count = 0;
       var stopwatch = new Stopwatch()..start();
 
-      Future failCountTimes() async {
+      Future<int> failCountTimes() async {
         expect(stopwatch.elapsed, greaterThanOrEqualTo(_delay * count));
 
         while (count < _failCount) {
@@ -63,7 +63,7 @@ void main() {
       var caught = false;
       var countAfterError = 0;
 
-      Future failCountTimes() async {
+      Future<int> failCountTimes() async {
         if (caught) {
           countAfterError++;
         }

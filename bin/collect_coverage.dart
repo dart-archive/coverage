@@ -23,6 +23,7 @@ Future<Null> main(List<String> arguments) async {
         options.serviceUri, options.resume, options.waitPaused, options.onExit,
         timeout: options.timeout);
     options.out.write(json.encode(coverage));
+    await options.out.flush();
     await options.out.close();
   }, onError: (dynamic error, Chain chain) {
     stderr.writeln(error);

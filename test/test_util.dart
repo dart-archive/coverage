@@ -14,7 +14,7 @@ const Duration timeout = const Duration(seconds: 20);
 Future<Process> runTestApp(int openPort) async {
   return Process.start('dart', [
     '--enable-vm-service=$openPort',
-    '--pause_isolates_on_exit',
+    '--pause-isolates-on-exit',
     testAppPath
   ]);
 }

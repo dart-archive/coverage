@@ -18,12 +18,22 @@ final _sampleAppFileUri = p.toUri(p.absolute(testAppPath)).toString();
 final _isolateLibFileUri = p.toUri(p.absolute(_isolateLibPath)).toString();
 
 void main() {
+  group('one time collection', () {
+    _runTests(false);
+  });
+
+  group('on isolate exit', () {
+    _runTests(true);
+  });
+}
+
+void _runTests(bool onExit) {
   test('collect throws when serviceUri is null', () {
-    expect(() => collect(null, true, false, false), throwsArgumentError);
+    expect(() => collect(null, true, false, onExit), throwsArgumentError);
   });
 
   test('collect_coverage_api', () async {
-    Map<String, dynamic> json = await _getCoverageResult();
+    Map<String, dynamic> json = await _getCoverageResult(onExit);
     expect(json.keys, unorderedEquals(<String>['type', 'coverage']));
     expect(json, containsPair('type', 'CodeCoverage'));
 
@@ -48,15 +58,17 @@ void main() {
 }
 
 Map _coverageData;
+Map _onExitCoverageData;
 
-Future<Map<String, dynamic>> _getCoverageResult() async {
-  if (_coverageData == null) {
-    _coverageData = await _collectCoverage();
+Future<Map<String, dynamic>> _getCoverageResult([bool onExit = false]) async {
+  if (onExit) {
+    return _onExitCoverageData ??= await _collectCoverage(true);
+  } else {
+    return _coverageData ??= await _collectCoverage();
   }
-  return _coverageData;
 }
 
-Future<Map<String, dynamic>> _collectCoverage() async {
+Future<Map<String, dynamic>> _collectCoverage([bool onExit = false]) async {
   var openPort = await getOpenPort();
 
   // run the sample app, with the right flags
@@ -77,5 +89,5 @@ Future<Map<String, dynamic>> _collectCoverage() async {
   });
   Uri serviceUri = await serviceUriCompleter.future;
 
-  return collect(serviceUri, true, true, false, timeout: timeout);
+  return collect(serviceUri, true, true, onExit, timeout: timeout);
 }

@@ -26,8 +26,6 @@ const _retryInterval = const Duration(milliseconds: 200);
 Future<Map<String, dynamic>> collect(
     Uri serviceUri, bool resume, bool waitPaused, bool onExit,
     {Duration timeout}) async {
-  if (serviceUri == null) throw ArgumentError('serviceUri must not be null');
-
   _CoverageCollector collector;
   if (onExit) {
     collector = _OnExitCollector(serviceUri, resume, timeout: timeout);
@@ -156,10 +154,29 @@ class _OnExitCollector extends _CoverageCollector {
       : super(serviceUri, timeout: timeout);
 
   final bool resume;
-  final Completer<void> _completer = Completer();
+  final Completer<void> _allIsolatesExited = Completer();
 
   Map<VMIsolateRef, StreamSubscription> _exitSubscriptions = {};
   StreamSubscription _isolateStartSubscription;
+
+  List<Future> _ongoingCollections = [];
+  List<Future> _ongoingResumes = [];
+
+  @override
+  Future<void> collectFromIsolate(VMIsolateRef isolateRef) async {
+    // no other collectFromIsolate call may be active at the time this future
+    // resolves. When the last isolate finishes, but coverage from another
+    // isolate is still being collected, there is a race condition
+    // resulting in a deadlock.
+    var future = super.collectFromIsolate(isolateRef);
+    _ongoingCollections.add(future);
+
+    while (_ongoingCollections.isNotEmpty) {
+      var operation = _ongoingCollections.last;
+      await operation;
+      _ongoingCollections.remove(operation);
+    }
+  }
 
   @override
   Future prepare() async {}
@@ -168,11 +185,19 @@ class _OnExitCollector extends _CoverageCollector {
   Future collectCoverage() async {
     // Track all active isolates, also track isolates when they are started
     var vm = await vmService.getVM();
-    vm.isolates.forEach(_trackIsolate);
+    for (var isolateRef in vm.isolates) {
+      await _trackIsolate(isolateRef);
+    }
 
     _isolateStartSubscription = vmService.onIsolateStart.listen(_trackIsolate);
 
-    return _completer.future;
+    await _allIsolatesExited.future;
+
+    // wait until all collection operations are complete
+    await _isolateStartSubscription.cancel();
+    for (var future in _ongoingResumes) {
+      await future;
+    }
   }
 
   Future _trackIsolate(VMIsolateRef isolate) async {
@@ -180,26 +205,30 @@ class _OnExitCollector extends _CoverageCollector {
     var isolateData = await isolate.load();
     if (isolateData.pauseEvent is VMPauseExitEvent) {
       await collectFromIsolate(isolate);
+      await _resumeIsolate(isolate);
     } else {
       // collect coverage when the isolate is about to exit
       _exitSubscriptions[isolate] = isolate.onPauseOrResume
           .where((event) => event is VMPauseExitEvent)
-          .listen((_) async => await _collectFromExitingIsolate(isolate));
+          .listen((_) {
+        _collectFromExitingIsolate(isolate);
+      });
     }
   }
 
   Future _collectFromExitingIsolate(VMIsolateRef isolate) async {
     await _exitSubscriptions.remove(isolate).cancel();
     await collectFromIsolate(isolate);
+    await _resumeIsolate(isolate);
 
-    if (resume) {
-      await isolate.resume();
+    if (_exitSubscriptions.isEmpty && !_allIsolatesExited.isCompleted) {
+      _allIsolatesExited.complete(null);
     }
+  }
 
-    if (_exitSubscriptions.isEmpty) {
-      // all isolates finished, done collecting coverage
-      await _isolateStartSubscription.cancel();
-      _completer.complete(null);
+  Future<void> _resumeIsolate(VMIsolateRef isolate) async {
+    if (resume) {
+      _ongoingResumes.add(isolate.resume());
     }
   }
 

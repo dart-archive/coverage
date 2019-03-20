@@ -159,24 +159,7 @@ class _OnExitCollector extends _CoverageCollector {
   Map<VMIsolateRef, StreamSubscription> _exitSubscriptions = {};
   StreamSubscription _isolateStartSubscription;
 
-  List<Future> _ongoingCollections = [];
-  List<Future> _ongoingResumes = [];
-
-  @override
-  Future<void> collectFromIsolate(VMIsolateRef isolateRef) async {
-    // no other collectFromIsolate call may be active at the time this future
-    // resolves. When the last isolate finishes, but coverage from another
-    // isolate is still being collected, there is a race condition
-    // resulting in a deadlock.
-    var future = super.collectFromIsolate(isolateRef);
-    _ongoingCollections.add(future);
-
-    while (_ongoingCollections.isNotEmpty) {
-      var operation = _ongoingCollections.last;
-      await operation;
-      _ongoingCollections.remove(operation);
-    }
-  }
+  Completer<void> _currentCollection;
 
   @override
   Future prepare() async {}
@@ -195,9 +178,6 @@ class _OnExitCollector extends _CoverageCollector {
 
     // wait until all collection operations are complete
     await _isolateStartSubscription.cancel();
-    for (var future in _ongoingResumes) {
-      await future;
-    }
   }
 
   Future _trackIsolate(VMIsolateRef isolate) async {
@@ -217,9 +197,18 @@ class _OnExitCollector extends _CoverageCollector {
   }
 
   Future _collectFromExitingIsolate(VMIsolateRef isolate) async {
-    await _exitSubscriptions.remove(isolate).cancel();
+    // only collect from one isolate at a time
+    while (_currentCollection != null && !_currentCollection.isCompleted) {
+      await _currentCollection.future;
+    }
+
+    _currentCollection = Completer<void>();
     await collectFromIsolate(isolate);
     await _resumeIsolate(isolate);
+
+    await _exitSubscriptions.remove(isolate).cancel();
+
+    _currentCollection.complete();
 
     if (_exitSubscriptions.isEmpty && !_allIsolatesExited.isCompleted) {
       _allIsolatesExited.complete(null);
@@ -228,7 +217,7 @@ class _OnExitCollector extends _CoverageCollector {
 
   Future<void> _resumeIsolate(VMIsolateRef isolate) async {
     if (resume) {
-      _ongoingResumes.add(isolate.resume());
+      await isolate.resume();
     }
   }
 

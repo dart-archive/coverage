@@ -60,15 +60,15 @@ void _runTests(bool onExit) {
 Map _coverageData;
 Map _onExitCoverageData;
 
-Future<Map<String, dynamic>> _getCoverageResult([bool onExit = false]) async {
+Future<Map<String, dynamic>> _getCoverageResult(bool onExit) async {
   if (onExit) {
     return _onExitCoverageData ??= await _collectCoverage(true);
   } else {
-    return _coverageData ??= await _collectCoverage();
+    return _coverageData ??= await _collectCoverage(false);
   }
 }
 
-Future<Map<String, dynamic>> _collectCoverage([bool onExit = false]) async {
+Future<Map<String, dynamic>> _collectCoverage(bool onExit) async {
   var openPort = await getOpenPort();
 
   // run the sample app, with the right flags

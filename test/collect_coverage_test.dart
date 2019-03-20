@@ -20,8 +20,18 @@ final _sampleAppFileUri = p.toUri(p.absolute(testAppPath)).toString();
 final _isolateLibFileUri = p.toUri(p.absolute(_isolateLibPath)).toString();
 
 void main() {
+  group('one time collection', () {
+    _runTests(false);
+  });
+
+  group('on isolate exit', () {
+    _runTests(true);
+  });
+}
+
+void _runTests(bool onExit) {
   test('collect_coverage', () async {
-    var resultString = await _getCoverageResult();
+    var resultString = await _getCoverageResult(false);
 
     // analyze the output json
     Map<String, dynamic> jsonResult = json.decode(resultString);
@@ -49,7 +59,7 @@ void main() {
   });
 
   test('createHitmap', () async {
-    var resultString = await _getCoverageResult();
+    var resultString = await _getCoverageResult(onExit);
     Map<String, dynamic> jsonResult = json.decode(resultString);
     List coverage = jsonResult['coverage'];
     var hitMap = createHitmap(coverage);
@@ -92,7 +102,7 @@ void main() {
     try {
       var outputFile = new File(p.join(tempDir.path, 'coverage.json'));
 
-      var coverageResults = await _getCoverageResult();
+      var coverageResults = await _getCoverageResult(onExit);
       await outputFile.writeAsString(coverageResults, flush: true);
 
       var parsedResult = await parseCoverage([outputFile], 1);
@@ -106,15 +116,17 @@ void main() {
 }
 
 String _coverageData;
+String _onExitCoverageData;
 
-Future<String> _getCoverageResult() async {
-  if (_coverageData == null) {
-    _coverageData = await _collectCoverage();
+Future<String> _getCoverageResult(bool onExit) async {
+  if (onExit) {
+    return _onExitCoverageData ??= await _collectCoverage(true);
+  } else {
+    return _coverageData ??= await _collectCoverage(false);
   }
-  return _coverageData;
 }
 
-Future<String> _collectCoverage() async {
+Future<String> _collectCoverage(bool onExit) async {
   expect(FileSystemEntity.isFileSync(testAppPath), isTrue);
 
   var openPort = await getOpenPort();
@@ -139,13 +151,20 @@ Future<String> _collectCoverage() async {
 
   // Run the collection tool.
   // TODO: need to get all of this functionality in the lib
-  var toolResult = await Process.run('dart', [
+  var params = [
     _collectAppPath,
     '--uri',
     '$serviceUri',
     '--resume-isolates',
-    '--wait-paused'
-  ]).timeout(timeout, onTimeout: () {
+  ];
+  if (onExit) {
+    params.add('--on-exit');
+  } else {
+    params.add('--wait-paused');
+  }
+
+  var toolResult =
+      await Process.run('dart', params).timeout(timeout, onTimeout: () {
     throw 'We timed out waiting for the tool to finish.';
   });
 

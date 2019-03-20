@@ -168,24 +168,32 @@ class _OnExitCollector extends _CoverageCollector {
   Future collectCoverage() async {
     // Track all active isolates, also track isolates when they are started
     var vm = await vmService.getVM();
+    var allIsolatesAlreadyPaused = true;
+
+    // Collection could have started at a time in which all isolates have
+    // already been paused before exiting. In that case, waiting for new
+    // isolates to start will take forever.
     for (var isolateRef in vm.isolates) {
-      await _trackIsolate(isolateRef);
+      allIsolatesAlreadyPaused &= await _trackIsolate(isolateRef);
     }
 
-    _isolateStartSubscription = vmService.onIsolateStart.listen(_trackIsolate);
+    if (!allIsolatesAlreadyPaused) {
+      _isolateStartSubscription =
+          vmService.onIsolateStart.listen(_trackIsolate);
 
-    await _allIsolatesExited.future;
-
-    // wait until all collection operations are complete
-    await _isolateStartSubscription.cancel();
+      await _allIsolatesExited.future;
+      await _isolateStartSubscription.cancel();
+    }
   }
 
-  Future _trackIsolate(VMIsolateRef isolate) async {
+  // Tracks the isolate to collect coverage when it exists. Returns true if the
+  // isolate is already exiting.
+  Future<bool> _trackIsolate(VMIsolateRef isolate) async {
     // check if the isolate is already paused
     var isolateData = await isolate.load();
     if (isolateData.pauseEvent is VMPauseExitEvent) {
-      await collectFromIsolate(isolate);
-      await _resumeIsolate(isolate);
+      await _collectAndResume(isolate);
+      return true;
     } else {
       // collect coverage when the isolate is about to exit
       _exitSubscriptions[isolate] = isolate.onPauseOrResume
@@ -193,10 +201,20 @@ class _OnExitCollector extends _CoverageCollector {
           .listen((_) {
         _collectFromExitingIsolate(isolate);
       });
+      return false;
     }
   }
 
   Future _collectFromExitingIsolate(VMIsolateRef isolate) async {
+    await _collectAndResume(isolate, cancelSubscription: true);
+
+    if (_exitSubscriptions.isEmpty && !_allIsolatesExited.isCompleted) {
+      _allIsolatesExited.complete(null);
+    }
+  }
+
+  Future<void> _collectAndResume(VMIsolateRef isolate,
+      {bool cancelSubscription = false}) async {
     // only collect from one isolate at a time
     while (_currentCollection != null && !_currentCollection.isCompleted) {
       await _currentCollection.future;
@@ -204,21 +222,15 @@ class _OnExitCollector extends _CoverageCollector {
 
     _currentCollection = Completer<void>();
     await collectFromIsolate(isolate);
-    await _resumeIsolate(isolate);
-
-    await _exitSubscriptions.remove(isolate).cancel();
-
-    _currentCollection.complete();
-
-    if (_exitSubscriptions.isEmpty && !_allIsolatesExited.isCompleted) {
-      _allIsolatesExited.complete(null);
-    }
-  }
-
-  Future<void> _resumeIsolate(VMIsolateRef isolate) async {
     if (resume) {
       await isolate.resume();
     }
+
+    if (cancelSubscription) {
+      await _exitSubscriptions.remove(isolate).cancel();
+    }
+
+    _currentCollection.complete();
   }
 
   @override

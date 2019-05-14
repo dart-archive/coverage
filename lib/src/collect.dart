@@ -36,7 +36,7 @@ Future<Map<String, dynamic>> collect(
   VMServiceClient vmService;
   await retry(() async {
     try {
-      vmService = new VMServiceClient.connect(uri);
+      vmService = VMServiceClient.connect(uri);
       await vmService.getVM().timeout(_retryInterval);
     } on TimeoutException {
       vmService.close();

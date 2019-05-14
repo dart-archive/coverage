@@ -112,8 +112,7 @@ class BazelResolver extends Resolver {
     }
     if (uri.scheme == 'file') {
       var runfilesPathSegment = '.runfiles/$workspacePath';
-      runfilesPathSegment =
-          runfilesPathSegment.replaceAll(RegExp(r'/*$'), '/');
+      runfilesPathSegment = runfilesPathSegment.replaceAll(RegExp(r'/*$'), '/');
       var runfilesPos = uri.path.indexOf(runfilesPathSegment);
       if (runfilesPos >= 0) {
         int pathStart = runfilesPos + runfilesPathSegment.length;

@@ -8,7 +8,7 @@ import 'package:coverage/src/util.dart';
 import 'package:test/test.dart';
 
 const _failCount = 5;
-const _delay = const Duration(milliseconds: 10);
+const _delay = Duration(milliseconds: 10);
 
 void main() {
   test('retry', () async {

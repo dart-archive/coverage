@@ -7,7 +7,7 @@ import 'dart:async';
 import 'package:vm_service_client/vm_service_client.dart';
 import 'util.dart';
 
-const _retryInterval = const Duration(milliseconds: 200);
+const _retryInterval = Duration(milliseconds: 200);
 
 /// Collects coverage for all isolates in the running VM.
 ///

@@ -94,7 +94,7 @@ void main() {
       var hitmap = await _getHitMap();
 
       var resolver = Resolver(packagesPath: '.packages');
-      var formatter = PrettyPrintFormatter(resolver, new Loader());
+      var formatter = PrettyPrintFormatter(resolver, Loader());
 
       String res = await formatter.format(hitmap);
 
@@ -119,8 +119,8 @@ void main() {
       var hitmap = await _getHitMap();
 
       var resolver = Resolver(packagesPath: '.packages');
-      var formatter = PrettyPrintFormatter(resolver, new Loader(),
-          reportOn: ['lib/', 'test/']);
+      var formatter =
+          PrettyPrintFormatter(resolver, Loader(), reportOn: ['lib/', 'test/']);
 
       String res = await formatter.format(hitmap);
 
@@ -134,7 +134,7 @@ void main() {
 
       var resolver = Resolver(packagesPath: '.packages');
       var formatter =
-          PrettyPrintFormatter(resolver, new Loader(), reportOn: ['lib/']);
+          PrettyPrintFormatter(resolver, Loader(), reportOn: ['lib/']);
 
       String res = await formatter.format(hitmap);
 

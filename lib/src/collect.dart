@@ -175,8 +175,9 @@ class _OnExitCollector extends _CoverageCollector {
     // isolates to start will take forever.
     for (var isolateRef in vm.isolates) {
       final isolatePaused = await _trackIsolate(isolateRef);
-      if (isolatePaused)
+      if (!isolatePaused) {
         allIsolatesAlreadyPaused = false;
+      }
     }
 
     if (!allIsolatesAlreadyPaused) {

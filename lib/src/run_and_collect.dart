@@ -12,6 +12,8 @@ import 'util.dart';
 Future<Map<String, dynamic>> runAndCollect(String scriptPath,
     {List<String> scriptArgs,
     bool checked = false,
+    bool onExit = false,
+    bool printOutput = false,
     String packageRoot,
     Duration timeout}) async {
   final dartArgs = [
@@ -39,6 +41,10 @@ Future<Map<String, dynamic>> runAndCollect(String scriptPath,
       .transform(utf8.decoder)
       .transform(const LineSplitter())
       .listen((line) {
+    if (printOutput) {
+      print(line);
+    }
+
     final uri = extractObservatoryUri(line);
     if (uri != null) {
       serviceUriCompleter.complete(uri);
@@ -48,7 +54,7 @@ Future<Map<String, dynamic>> runAndCollect(String scriptPath,
   final serviceUri = await serviceUriCompleter.future;
   Map<String, dynamic> coverage;
   try {
-    coverage = await collect(serviceUri, true, true, false, timeout: timeout);
+    coverage = await collect(serviceUri, true, true, onExit, timeout: timeout);
   } finally {
     await process.stderr.drain<List<int>>();
   }

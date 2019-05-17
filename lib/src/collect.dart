@@ -174,7 +174,9 @@ class _OnExitCollector extends _CoverageCollector {
     // already been paused before exiting. In that case, waiting for new
     // isolates to start will take forever.
     for (var isolateRef in vm.isolates) {
-      allIsolatesAlreadyPaused &= await _trackIsolate(isolateRef);
+      final isolatePaused = await _trackIsolate(isolateRef);
+      if (isolatePaused)
+        allIsolatesAlreadyPaused = false;
     }
 
     if (!allIsolatesAlreadyPaused) {

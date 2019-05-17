@@ -8,12 +8,12 @@ import 'package:coverage/src/util.dart';
 import 'package:test/test.dart';
 
 const _failCount = 5;
-const _delay = const Duration(milliseconds: 10);
+const _delay = Duration(milliseconds: 10);
 
 void main() {
   test('retry', () async {
     int count = 0;
-    var stopwatch = new Stopwatch()..start();
+    final stopwatch = Stopwatch()..start();
 
     Future<int> failCountTimes() async {
       expect(stopwatch.elapsed, greaterThanOrEqualTo(_delay * count));
@@ -25,7 +25,7 @@ void main() {
       return 42;
     }
 
-    int value = await retry(failCountTimes, _delay);
+    final int value = await retry(failCountTimes, _delay);
 
     expect(value, 42);
     expect(count, _failCount);
@@ -35,7 +35,7 @@ void main() {
   group('retry with timeout', () {
     test('if it finishes', () async {
       int count = 0;
-      var stopwatch = new Stopwatch()..start();
+      final stopwatch = Stopwatch()..start();
 
       Future<int> failCountTimes() async {
         expect(stopwatch.elapsed, greaterThanOrEqualTo(_delay * count));
@@ -47,8 +47,8 @@ void main() {
         return 42;
       }
 
-      var safeTimoutDuration = _delay * _failCount * 2;
-      int value =
+      final safeTimoutDuration = _delay * _failCount * 2;
+      final int value =
           await retry(failCountTimes, _delay, timeout: safeTimoutDuration);
 
       expect(value, 42);
@@ -58,7 +58,7 @@ void main() {
 
     test('if it does not finish', () async {
       int count = 0;
-      var stopwatch = new Stopwatch()..start();
+      final stopwatch = Stopwatch()..start();
 
       var caught = false;
       var countAfterError = 0;
@@ -73,7 +73,7 @@ void main() {
         throw 'never';
       }
 
-      var unsafeTimeoutDuration = _delay * (_failCount / 2);
+      final unsafeTimeoutDuration = _delay * (_failCount / 2);
 
       try {
         await retry(failCountTimes, _delay, timeout: unsafeTimeoutDuration);
@@ -84,7 +84,7 @@ void main() {
         expect(countAfterError, 0,
             reason: 'Execution should stop after a timeout');
 
-        await new Future<dynamic>.delayed(_delay * 3);
+        await Future<dynamic>.delayed(_delay * 3);
 
         expect(countAfterError, 0, reason: 'Even after a delay');
       }

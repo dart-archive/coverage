@@ -17,10 +17,10 @@ Future<T> retry<T>(Future<T> f(), Duration interval, {Duration timeout}) async {
 
     return f().timeout(duration, onTimeout: () {
       keepGoing = false;
-      var msg = duration.inSeconds == 0
+      final msg = duration.inSeconds == 0
           ? '${duration.inMilliseconds}ms'
           : '${duration.inSeconds}s';
-      throw new StateError('Failed to complete within $msg');
+      throw StateError('Failed to complete within $msg');
     });
   }
 
@@ -30,7 +30,7 @@ Future<T> retry<T>(Future<T> f(), Duration interval, {Duration timeout}) async {
         return await f();
       } catch (_) {
         if (keepGoing) {
-          await new Future<dynamic>.delayed(interval);
+          await Future<dynamic>.delayed(interval);
         }
       }
     }
@@ -42,10 +42,10 @@ Future<T> retry<T>(Future<T> f(), Duration interval, {Duration timeout}) async {
 /// Potentially useful as a means to extract it from log statements.
 Uri extractObservatoryUri(String str) {
   const kObservatoryListening = 'Observatory listening on ';
-  int msgPos = str.indexOf(kObservatoryListening);
+  final msgPos = str.indexOf(kObservatoryListening);
   if (msgPos == -1) return null;
-  int startPos = msgPos + kObservatoryListening.length;
-  int endPos = str.indexOf(new RegExp(r'(\s|$)'), startPos);
+  final startPos = msgPos + kObservatoryListening.length;
+  final endPos = str.indexOf(RegExp(r'(\s|$)'), startPos);
   try {
     return Uri.parse(str.substring(startPos, endPos));
   } on FormatException {

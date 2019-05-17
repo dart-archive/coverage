@@ -33,16 +33,16 @@ void _runTests(bool onExit) {
   });
 
   test('collect_coverage_api', () async {
-    Map<String, dynamic> json = await _getCoverageResult(onExit);
+    final Map<String, dynamic> json = await _getCoverageResult(onExit);
     expect(json.keys, unorderedEquals(<String>['type', 'coverage']));
     expect(json, containsPair('type', 'CodeCoverage'));
 
-    List coverage = json['coverage'];
+    final List coverage = json['coverage'];
     expect(coverage, isNotEmpty);
 
-    var sources = coverage.fold(<String, dynamic>{},
+    final sources = coverage.fold(<String, dynamic>{},
         (Map<String, dynamic> map, dynamic value) {
-      String sourceUri = value['source'];
+      final String sourceUri = value['source'];
       map.putIfAbsent(sourceUri, () => <Map>[]).add(value);
       return map;
     });
@@ -69,25 +69,25 @@ Future<Map<String, dynamic>> _getCoverageResult(bool onExit) async {
 }
 
 Future<Map<String, dynamic>> _collectCoverage(bool onExit) async {
-  var openPort = await getOpenPort();
+  final openPort = await getOpenPort();
 
   // run the sample app, with the right flags
-  var sampleProcess = await runTestApp(openPort);
+  final sampleProcess = await runTestApp(openPort);
 
   // Capture the VM service URI.
-  Completer<Uri> serviceUriCompleter = new Completer<Uri>();
+  final serviceUriCompleter = Completer<Uri>();
   sampleProcess.stdout
       .transform(utf8.decoder)
-      .transform(new LineSplitter())
+      .transform(LineSplitter())
       .listen((line) {
     if (!serviceUriCompleter.isCompleted) {
-      Uri serviceUri = extractObservatoryUri(line);
+      final Uri serviceUri = extractObservatoryUri(line);
       if (serviceUri != null) {
         serviceUriCompleter.complete(serviceUri);
       }
     }
   });
-  Uri serviceUri = await serviceUriCompleter.future;
+  final Uri serviceUri = await serviceUriCompleter.future;
 
   return collect(serviceUri, true, true, onExit, timeout: timeout);
 }

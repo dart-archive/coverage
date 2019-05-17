@@ -111,9 +111,9 @@ class _OneTimeCollector extends _CoverageCollector {
   Future prepare() {
     if (waitPaused) {
       Future<void> allPaused() async {
-        var vm = await vmService.getVM();
+        final vm = await vmService.getVM();
         for (var isolateRef in vm.isolates) {
-          var isolate = await isolateRef.load();
+          final isolate = await isolateRef.load();
           if (!isolate.isPaused) throw "Unpaused isolates remaining.";
         }
       }
@@ -167,7 +167,7 @@ class _OnExitCollector extends _CoverageCollector {
   @override
   Future collectCoverage() async {
     // Track all active isolates, also track isolates when they are started
-    var vm = await vmService.getVM();
+    final vm = await vmService.getVM();
     var allIsolatesAlreadyPaused = true;
 
     // Collection could have started at a time in which all isolates have

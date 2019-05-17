@@ -151,20 +151,19 @@ Future<String> _collectCoverage(bool onExit) async {
 
   // Run the collection tool.
   // TODO: need to get all of this functionality in the lib
-  final toolResult = await Process.run('dart', [
+  final params = [
     _collectAppPath,
     '--uri',
     '$serviceUri',
     '--resume-isolates',
-    if (onExit)
-      '--on-exit'
-    else
-     '--wait-paused',
-  ]).timeout(timeout, onTimeout: () {
-    throw 'We timed out waiting for the tool to finish.';
-  });
+  ];
+  if (onExit) {
+    params.add('--on-exit');
+  } else {
+    params.add('--wait-paused');
+  }
 
-  var toolResult =
+  final toolResult =
       await Process.run('dart', params).timeout(timeout, onTimeout: () {
     throw 'We timed out waiting for the tool to finish.';
   });

@@ -114,6 +114,6 @@ Options _parseArgs(List<String> arguments) {
   final timeout = (args['connect-timeout'] == null)
       ? null
       : Duration(seconds: int.parse(args['connect-timeout']));
-  return Options(serviceUri, out, timeout, args['wait-paused'],
-      args['on-exit'], args['resume-isolates']);
+  return Options(serviceUri, out, timeout, args['wait-paused'], args['on-exit'],
+      args['resume-isolates']);
 }

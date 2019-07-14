@@ -1,8 +1,21 @@
+## 0.13.0 - 2019-07-10
+
+ * BREAKING CHANGE: Skips collecting coverage for `dart:` libaries by default,
+   which provides a significant performance boost. To restore the previous
+   behaviour and collect coverage for these libraries, use the `--include-dart`
+   flag.
+ * Disables WebSocket compression for coverage collection. Since almost all
+   coverage collection runs happen over the loopback interface to localhost,
+   this improves performance and reduces CPU usage.
+ * Migrates implementation of VM service protocol library from
+   `package:vm_service_client`, which is no longer maintained, to
+   `package:vm_service_lib`, which is.
+
 ## 0.12.4 - 2019-01-11
 
  * `collect()` now immediately throws `ArgumentError` if a null URI is passed
-    in the `serviceUri` parameter to avoid a less-easily debuggable null
-    dereference later. See dart-lang/coverage#240 for details.
+   in the `serviceUri` parameter to avoid a less-easily debuggable null
+   dereference later. See dart-lang/coverage#240 for details.
 
 ## 0.12.3 - 2018-10-19
 

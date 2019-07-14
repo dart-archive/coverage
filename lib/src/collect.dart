@@ -3,8 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io';
 
-import 'package:vm_service_client/vm_service_client.dart';
+import 'package:vm_service_lib/vm_service_lib.dart';
 import 'util.dart';
 
 const _retryInterval = Duration(milliseconds: 200);
@@ -24,21 +25,22 @@ const _retryInterval = Duration(milliseconds: 200);
 /// If [waitPaused] is true, collection will not begin until all isolates are
 /// in the paused state.
 Future<Map<String, dynamic>> collect(
-    Uri serviceUri, bool resume, bool waitPaused, bool onExit,
+    Uri serviceUri, bool resume, bool waitPaused, bool onExit, bool includeDart,
     {Duration timeout}) async {
   _CoverageCollector collector;
   if (onExit) {
-    collector = _OnExitCollector(serviceUri, resume, timeout: timeout);
-  } else {
     collector =
-        _OneTimeCollector(serviceUri, waitPaused, resume, timeout: timeout);
+        _OnExitCollector(serviceUri, includeDart, resume, timeout: timeout);
+  } else {
+    collector = _OneTimeCollector(serviceUri, includeDart, waitPaused, resume,
+        timeout: timeout);
   }
 
   return await collector.collect();
 }
 
 abstract class _CoverageCollector {
-  _CoverageCollector(this.serviceUri, {this.timeout}) {
+  _CoverageCollector(this.serviceUri, this.includeDart, {this.timeout}) {
     if (serviceUri == null) throw ArgumentError('serviceUri must not be null');
   }
 
@@ -46,10 +48,11 @@ abstract class _CoverageCollector {
 
   final Duration timeout;
   final Uri serviceUri;
+  final bool includeDart;
 
-  VMServiceClient vmService;
+  VmService service;
 
-  Future<VMServiceClient> connectToVMService() async {
+  Future<VmService> connectToVMService() async {
     // Create websocket URI. Handle any trailing slashes.
     final pathSegments =
         serviceUri.pathSegments.where((c) => c.isNotEmpty).toList()..add('ws');
@@ -57,11 +60,18 @@ abstract class _CoverageCollector {
 
     return await retry(() async {
       try {
-        final vmService = VMServiceClient.connect(uri);
-        await vmService.getVM().timeout(_retryInterval);
-        return vmService;
+        final options = const CompressionOptions(enabled: false);
+        final socket = await WebSocket.connect('$uri', compression: options);
+        final controller = StreamController<String>();
+        socket.listen((dynamic data) => controller.add(data));
+        final service = VmService(
+            controller.stream, (String message) => socket.add(message),
+            log: StdoutLog(), disposeHandler: () => socket.close());
+        await service.getVM().timeout(_retryInterval);
+
+        return service;
       } on TimeoutException {
-        vmService.close();
+        service.dispose();
         rethrow;
       }
     }, _retryInterval, timeout: timeout);
@@ -72,14 +82,14 @@ abstract class _CoverageCollector {
   Future tearDown();
 
   Future<Map<String, dynamic>> collect() async {
-    vmService = await connectToVMService();
+    service = await connectToVMService();
 
     try {
       await prepare();
       await collectCoverage();
     } finally {
       await tearDown();
-      await vmService.close();
+      service.dispose();
     }
 
     return <String, dynamic>{
@@ -88,45 +98,70 @@ abstract class _CoverageCollector {
     };
   }
 
-  Future<void> collectFromIsolate(VMIsolateRef isolateRef) async {
-    final isolate = await isolateRef.load();
-    final report = await isolate.getSourceReport(forceCompile: true);
-    final coverage = await _getCoverageJson(vmService, report);
+  Future<void> collectFromIsolate(IsolateRef isolateRef) async {
+    final SourceReport report = await service.getSourceReport(
+      isolateRef.id,
+      <String>[SourceReportKind.kCoverage],
+      forceCompile: true,
+    );
+    final coverage =
+        await _getCoverageJson(service, isolateRef, report, includeDart);
 
     _collectedCoverage.addAll(coverage);
+  }
+
+  /// Resumes the [isolateRef], if its not in a resumed state.
+  Future<void> resumeIsolate(IsolateRef isolateRef) async {
+    final Isolate isolate = await service.getIsolate(isolateRef.id);
+    if (isolate.pauseEvent.kind != EventKind.kResume) {
+      await service.resume(isolateRef.id);
+    }
   }
 }
 
 /// Collects coverage once, optionally waiting until all isolates have paused
 /// and optionally resuming them afterwards.
 class _OneTimeCollector extends _CoverageCollector {
-  _OneTimeCollector(Uri serviceUri, this.waitPaused, this.resume,
+  _OneTimeCollector(
+      Uri serviceUri, bool includeDart, this.waitPaused, this.resume,
       {Duration timeout})
-      : super(serviceUri, timeout: timeout);
+      : super(serviceUri, includeDart, timeout: timeout);
 
   final bool waitPaused;
   final bool resume;
 
   @override
-  Future prepare() {
+  Future prepare() async {
     if (waitPaused) {
-      Future<void> allPaused() async {
-        final vm = await vmService.getVM();
-        for (var isolateRef in vm.isolates) {
-          final isolate = await isolateRef.load();
-          if (!isolate.isPaused) throw "Unpaused isolates remaining.";
+      return await _waitIsolatesPaused();
+    }
+  }
+
+  Future<void> _waitIsolatesPaused() async {
+    final pauseEvents = Set<String>.from(<String>[
+      EventKind.kPauseStart,
+      EventKind.kPauseException,
+      EventKind.kPauseExit,
+      EventKind.kPauseInterrupted,
+      EventKind.kPauseBreakpoint
+    ]);
+
+    Future<void> allPaused() async {
+      final VM vm = await service.getVM();
+      for (var isolateRef in vm.isolates) {
+        final Isolate isolate = await service.getIsolate(isolateRef.id);
+        if (!pauseEvents.contains(isolate.pauseEvent.kind)) {
+          throw "Unpaused isolates remaining.";
         }
       }
-
-      return retry<void>(allPaused, _retryInterval, timeout: timeout);
     }
 
-    return Future<void>.value(null);
+    return retry(allPaused, _retryInterval, timeout: timeout);
   }
 
   @override
   Future collectCoverage() async {
-    final vm = await vmService.getVM();
+    final vm = await service.getVM();
 
     for (var isolateRef in vm.isolates) {
       await collectFromIsolate(isolateRef);
@@ -136,12 +171,9 @@ class _OneTimeCollector extends _CoverageCollector {
   @override
   Future tearDown() async {
     if (resume) {
-      final vm = await vmService.getVM();
+      final vm = await service.getVM();
       for (var isolateRef in vm.isolates) {
-        final isolate = await isolateRef.load();
-        if (isolate.isPaused) {
-          await isolateRef.resume();
-        }
+        await resumeIsolate(isolateRef);
       }
     }
   }
@@ -150,24 +182,29 @@ class _OneTimeCollector extends _CoverageCollector {
 /// Collects coverage when isolates pause before exiting, optionally resuming
 /// them afterwards.
 class _OnExitCollector extends _CoverageCollector {
-  _OnExitCollector(Uri serviceUri, this.resume, {Duration timeout})
-      : super(serviceUri, timeout: timeout);
+  _OnExitCollector(Uri serviceUri, bool includeDart, this.resume,
+      {Duration timeout})
+      : super(serviceUri, includeDart, timeout: timeout);
 
   final bool resume;
   final Completer<void> _allIsolatesExited = Completer();
 
-  Map<VMIsolateRef, StreamSubscription> _exitSubscriptions = {};
+  Map<IsolateRef, StreamSubscription> _exitSubscriptions = {};
   StreamSubscription _isolateStartSubscription;
 
   Completer<void> _currentCollection;
 
   @override
-  Future prepare() async {}
+  Future prepare() async {
+    // isolate start events are sent on kIsolate, exit events on kDebug
+    await service.streamListen(EventStreams.kIsolate);
+    await service.streamListen(EventStreams.kDebug);
+  }
 
   @override
   Future collectCoverage() async {
     // Track all active isolates, also track isolates when they are started
-    final vm = await vmService.getVM();
+    final vm = await service.getVM();
     var allIsolatesAlreadyPaused = true;
 
     // Collection could have started at a time in which all isolates have
@@ -181,8 +218,10 @@ class _OnExitCollector extends _CoverageCollector {
     }
 
     if (!allIsolatesAlreadyPaused) {
-      _isolateStartSubscription =
-          vmService.onIsolateStart.listen(_trackIsolate);
+      final isolateStartStream = service.onIsolateEvent
+          .where((e) => e.type == EventKind.kIsolateStart)
+          .map((e) => e.isolate);
+      _isolateStartSubscription = isolateStartStream.listen(_trackIsolate);
 
       await _allIsolatesExited.future;
       await _isolateStartSubscription.cancel();
@@ -191,24 +230,25 @@ class _OnExitCollector extends _CoverageCollector {
 
   // Tracks the isolate to collect coverage when it exists. Returns true if the
   // isolate is already exiting.
-  Future<bool> _trackIsolate(VMIsolateRef isolate) async {
+  Future<bool> _trackIsolate(IsolateRef isolateRef) async {
     // check if the isolate is already paused
-    final isolateData = await isolate.load();
-    if (isolateData.pauseEvent is VMPauseExitEvent) {
-      await _collectAndResume(isolate);
+    final Isolate isolate = await service.getIsolate(isolateRef.id);
+    if (isolate.pauseEvent.kind == EventKind.kPauseExit) {
+      await _collectAndResume(isolateRef);
       return true;
     } else {
       // collect coverage when the isolate is about to exit
-      _exitSubscriptions[isolate] = isolate.onPauseOrResume
-          .where((event) => event is VMPauseExitEvent)
-          .listen((_) {
-        _collectFromExitingIsolate(isolate);
+      final exitEvent = service.onDebugEvent.where((e) {
+        return e.kind == EventKind.kPauseExit && e.isolate == isolateRef;
+      });
+      _exitSubscriptions[isolateRef] = exitEvent.listen((_) {
+        _collectFromExitingIsolate(isolateRef);
       });
       return false;
     }
   }
 
-  Future _collectFromExitingIsolate(VMIsolateRef isolate) async {
+  Future _collectFromExitingIsolate(IsolateRef isolate) async {
     await _collectAndResume(isolate, cancelSubscription: true);
 
     if (_exitSubscriptions.isEmpty && !_allIsolatesExited.isCompleted) {
@@ -216,7 +256,7 @@ class _OnExitCollector extends _CoverageCollector {
     }
   }
 
-  Future<void> _collectAndResume(VMIsolateRef isolate,
+  Future<void> _collectAndResume(IsolateRef isolate,
       {bool cancelSubscription = false}) async {
     // only collect from one isolate at a time
     while (_currentCollection != null && !_currentCollection.isCompleted) {
@@ -226,7 +266,7 @@ class _OnExitCollector extends _CoverageCollector {
     _currentCollection = Completer<void>();
     await collectFromIsolate(isolate);
     if (resume) {
-      await isolate.resume();
+      await resumeIsolate(isolate);
     }
 
     if (cancelSubscription) {
@@ -240,30 +280,68 @@ class _OnExitCollector extends _CoverageCollector {
   Future tearDown() async {}
 }
 
-/// Returns a JSON coverage list backward-compatible with pre-1.16.0 SDKs.
-Future<List<Map<String, dynamic>>> _getCoverageJson(
-    VMServiceClient service, VMSourceReport report) async {
-  final scriptRefs = report.ranges.map((r) => r.script).toSet();
-  final scripts = <VMScriptRef, VMScript>{};
-  for (var ref in scriptRefs) {
-    scripts[ref] = await ref.load();
+/// Returns the line number to which the specified token position maps.
+///
+/// Performs a binary search within the script's token position table to locate
+/// the line in question.
+int _getLineFromTokenPos(Script script, int tokenPos) {
+  // TODO(cbracken): investigate whether caching this lookup results in
+  // significant performance gains.
+  var min = 0;
+  var max = script.tokenPosTable.length;
+  while (min < max) {
+    final mid = min + ((max - min) >> 1);
+    final row = script.tokenPosTable[mid];
+    if (row[1] > tokenPos) {
+      max = mid;
+    } else {
+      for (var i = 1; i < row.length; i += 2) {
+        if (row[i] == tokenPos) return row.first;
+      }
+      min = mid + 1;
+    }
   }
+  return null;
+}
 
+/// Returns a JSON coverage list backward-compatible with pre-1.16.0 SDKs.
+Future<List<Map<String, dynamic>>> _getCoverageJson(VmService service,
+    IsolateRef isolateRef, SourceReport report, bool includeDart) async {
   // script uri -> { line -> hit count }
   final hitMaps = <Uri, Map<int, int>>{};
+  final scripts = <ScriptRef, Script>{};
   for (var range in report.ranges) {
-    // Not returned in scripts section of source report.
-    if (range.script.uri.scheme == 'evaluate') continue;
+    final scriptRef = report.scripts[range.scriptIndex];
+    final Uri scriptUri = Uri.parse(report.scripts[range.scriptIndex].uri);
 
-    hitMaps.putIfAbsent(range.script.uri, () => <int, int>{});
-    final hitMap = hitMaps[range.script.uri];
-    final script = scripts[range.script];
-    for (VMScriptToken hit in range.hits ?? []) {
-      final line = script.sourceLocation(hit).line + 1;
+    // Not returned in scripts section of source report.
+    if (scriptUri.scheme == 'evaluate') continue;
+
+    // Skip scripts from dart:.
+    if (!includeDart && scriptUri.scheme == 'dart') continue;
+
+    if (!scripts.containsKey(scriptRef)) {
+      scripts[scriptRef] = await service.getObject(isolateRef.id, scriptRef.id);
+    }
+    final script = scripts[scriptRef];
+
+    // Look up the hit map for this script (shared across isolates).
+    final hitMap = hitMaps.putIfAbsent(scriptUri, () => <int, int>{});
+
+    // Collect hits and misses.
+    final coverage = range.coverage;
+    for (final tokenPos in coverage.hits) {
+      final line = _getLineFromTokenPos(script, tokenPos);
+      if (line == null) {
+        print('tokenPos $tokenPos has no line mapping for script $scriptUri');
+      }
       hitMap[line] = hitMap.containsKey(line) ? hitMap[line] + 1 : 1;
     }
-    for (VMScriptToken miss in range.misses ?? []) {
-      final line = script.sourceLocation(miss).line + 1;
+    for (final tokenPos in coverage.misses) {
+      final line = _getLineFromTokenPos(script, tokenPos);
+      if (line == null) {
+        print('tokenPos $tokenPos has no line mapping for script $scriptUri');
+      }
       hitMap.putIfAbsent(line, () => 0);
     }
   }
@@ -295,4 +373,11 @@ Map<String, dynamic> _toScriptCoverageJson(
   };
   json['hits'] = hits;
   return json;
+}
+
+class StdoutLog extends Log {
+  @override
+  void warning(String message) => print(message);
+  @override
+  void severe(String message) => print(message);
 }

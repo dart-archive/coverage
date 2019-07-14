@@ -29,7 +29,8 @@ void main() {
 
 void _runTests(bool onExit) {
   test('collect throws when serviceUri is null', () {
-    expect(() => collect(null, true, false, onExit), throwsArgumentError);
+    expect(
+        () => collect(null, true, false, onExit, false), throwsArgumentError);
   });
 
   test('collect_coverage_api', () async {
@@ -89,5 +90,5 @@ Future<Map<String, dynamic>> _collectCoverage(bool onExit) async {
   });
   final Uri serviceUri = await serviceUriCompleter.future;
 
-  return collect(serviceUri, true, true, onExit, timeout: timeout);
+  return collect(serviceUri, true, true, onExit, false, timeout: timeout);
 }

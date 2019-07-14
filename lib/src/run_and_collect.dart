@@ -15,6 +15,7 @@ Future<Map<String, dynamic>> runAndCollect(String scriptPath,
     bool onExit = false,
     bool printOutput = false,
     String packageRoot,
+    bool includeDart = false,
     Duration timeout}) async {
   final dartArgs = [
     '--enable-vm-service',
@@ -54,7 +55,8 @@ Future<Map<String, dynamic>> runAndCollect(String scriptPath,
   final serviceUri = await serviceUriCompleter.future;
   Map<String, dynamic> coverage;
   try {
-    coverage = await collect(serviceUri, true, true, onExit, timeout: timeout);
+    coverage = await collect(serviceUri, true, true, onExit, includeDart,
+        timeout: timeout);
   } finally {
     await process.stderr.drain<List<int>>();
   }

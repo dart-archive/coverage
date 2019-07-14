@@ -175,8 +175,11 @@ Future<Map> _getHitMap() async {
   final Uri serviceUri = await serviceUriCompleter.future;
 
   // collect hit map.
-  final List<Map> coverageJson =
-      (await collect(serviceUri, true, true, false, false))['coverage'];
+  final List<Map> coverageJson = (await collect(serviceUri,
+      resume: true,
+      waitPaused: true,
+      onExit: false,
+      includeDart: false))['coverage'];
   final hitMap = createHitmap(coverageJson);
 
   // wait for sample app to terminate.

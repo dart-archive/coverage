@@ -24,9 +24,15 @@ const _retryInterval = Duration(milliseconds: 200);
 ///
 /// If [waitPaused] is true, collection will not begin until all isolates are
 /// in the paused state.
-Future<Map<String, dynamic>> collect(
-    Uri serviceUri, bool resume, bool waitPaused, bool onExit, bool includeDart,
-    {Duration timeout}) async {
+///
+/// If [onExit] is true, collection will be run for each isolate before its
+/// exists. If [onExit] is true, the [waitPaused] parameter will be ignored.
+Future<Map<String, dynamic>> collect(Uri serviceUri,
+    {bool resume = false,
+    bool waitPaused = false,
+    bool onExit = false,
+    bool includeDart = false,
+    Duration timeout}) async {
   _CoverageCollector collector;
   if (onExit) {
     collector =

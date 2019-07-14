@@ -19,8 +19,11 @@ Future<Null> main(List<String> arguments) async {
 
   final options = _parseArgs(arguments);
   await Chain.capture(() async {
-    final coverage = await collect(options.serviceUri, options.resume,
-        options.waitPaused, options.onExit, options.includeDart,
+    final coverage = await collect(options.serviceUri,
+        resume: options.resume,
+        waitPaused: options.waitPaused,
+        onExit: options.onExit,
+        includeDart: options.includeDart,
         timeout: options.timeout);
     options.out.write(json.encode(coverage));
     await options.out.flush();

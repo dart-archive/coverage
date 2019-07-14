@@ -55,7 +55,11 @@ Future<Map<String, dynamic>> runAndCollect(String scriptPath,
   final serviceUri = await serviceUriCompleter.future;
   Map<String, dynamic> coverage;
   try {
-    coverage = await collect(serviceUri, true, true, onExit, includeDart,
+    coverage = await collect(serviceUri,
+        resume: true,
+        waitPaused: true,
+        onExit: onExit,
+        includeDart: includeDart,
         timeout: timeout);
   } finally {
     await process.stderr.drain<List<int>>();

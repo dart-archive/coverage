@@ -43,6 +43,8 @@ collected, it will wait until it detects a VM observatory to which it can
 connect. An optional `--connect-timeout` may be specified (in seconds).  The
 `--wait-paused` flag may be enabled, causing `collect_coverage` to wait until
 all isolates are paused before collecting coverage.
+Instead of waiting for all isolates to be paused, the `--on-exit` flag can be
+used to collect coverage whenever any isolate exits.
 
 #### Formatting coverage data
 
@@ -50,7 +52,7 @@ all isolates are paused before collecting coverage.
 pub global run coverage:format_coverage --packages=app_package/.packages -i coverage.json
 ```
 
-or if the `pub global run` exectuables are on your PATH,
+or if the `pub global run` executables are on your PATH,
 
 ```
 format_coverage --packages=app_package/.packages -i coverage.json

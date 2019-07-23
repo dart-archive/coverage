@@ -225,7 +225,7 @@ class _OnExitCollector extends _CoverageCollector {
 
     if (!allIsolatesAlreadyPaused) {
       final isolateStartStream = service.onIsolateEvent
-          .where((e) => e.type == EventKind.kIsolateStart)
+          .where((e) => e.kind == EventKind.kIsolateStart)
           .map((e) => e.isolate);
       _isolateStartSubscription = isolateStartStream.listen(_trackIsolate);
 

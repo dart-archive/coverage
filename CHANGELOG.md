@@ -1,6 +1,8 @@
 ## 0.13.3
 
- * Depend on `vm_service` instead of `vm_service_lib`.
+ * Migrates implementation of VM service protocol library from
+   `package:vm_service_lib`, which is no longer maintained, to
+   `package:vm_service`, which is.
 
 ## 0.13.2 - 2019-07-18
 

@@ -1,3 +1,7 @@
+## 0.13.3
+
+ * Depend on `vm_service` instead of `vm_service_lib`.
+
 ## 0.13.2 - 2019-07-18
 
  * Add new multi-flag option `--scope-output` which restricts coverage output

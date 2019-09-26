@@ -33,7 +33,7 @@ const _retryInterval = Duration(milliseconds: 200);
 /// scripts that start with any of the provided paths are considered.
 Future<Map<String, dynamic>> collect(Uri serviceUri, bool resume,
     bool waitPaused, bool includeDart, Set<String> scopedOutput,
-    {Duration timeout}) async {
+    {Duration timeout, Set<String> isolateIds}) async {
   scopedOutput ??= Set<String>();
   if (serviceUri == null) throw ArgumentError('serviceUri must not be null');
 
@@ -63,7 +63,7 @@ Future<Map<String, dynamic>> collect(Uri serviceUri, bool resume,
       await _waitIsolatesPaused(service, timeout: timeout);
     }
 
-    return await _getAllCoverage(service, includeDart, scopedOutput);
+    return await _getAllCoverage(service, includeDart, scopedOutput, isolateIds);
   } finally {
     if (resume) {
       await _resumeIsolates(service);
@@ -73,12 +73,13 @@ Future<Map<String, dynamic>> collect(Uri serviceUri, bool resume,
 }
 
 Future<Map<String, dynamic>> _getAllCoverage(
-    VmService service, bool includeDart, Set<String> scopedOutput) async {
+    VmService service, bool includeDart, Set<String> scopedOutput, Set<String> isolateIds) async {
   scopedOutput ??= Set<String>();
   final vm = await service.getVM();
   final allCoverage = <Map<String, dynamic>>[];
 
   for (var isolateRef in vm.isolates) {
+    if (!isolateIds.contains(isolateRef.id)) continue;
     if (scopedOutput.isNotEmpty) {
       final scripts = await service.getScripts(isolateRef.id);
       for (var script in scripts.scripts) {

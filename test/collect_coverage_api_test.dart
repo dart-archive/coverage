@@ -68,10 +68,19 @@ void main() {
       expect(uri.path.startsWith('coverage'), isTrue);
     }
   });
+
+  test('collect_coverage_api with isolateIds', () async {
+    final Map<String, dynamic> json = await _collectCoverage(isolateIds: true);
+    expect(json.keys, unorderedEquals(<String>['type', 'coverage']));
+    expect(json, containsPair('type', 'CodeCoverage'));
+
+    final List coverage = json['coverage'];
+    expect(coverage, isEmpty);
+  });
 }
 
 Future<Map<String, dynamic>> _collectCoverage(
-    {Set<String> scopedOutput}) async {
+    {Set<String> scopedOutput, bool isolateIds = false}) async {
   scopedOutput ??= Set<String>();
   final openPort = await getOpenPort();
 
@@ -92,6 +101,11 @@ Future<Map<String, dynamic>> _collectCoverage(
     }
   });
   final Uri serviceUri = await serviceUriCompleter.future;
+  Set isolateIdSet;
+  if (isolateIds) {
+    isolateIdSet = Set<String>.from(<String>[]);
+  }
 
-  return collect(serviceUri, true, true, false, scopedOutput, timeout: timeout);
+  return collect(serviceUri, true, true, false, scopedOutput,
+      timeout: timeout, isolateIds: isolateIdSet);
 }

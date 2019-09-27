@@ -75,7 +75,22 @@ void main() {
     expect(json, containsPair('type', 'CodeCoverage'));
 
     final List coverage = json['coverage'];
-    expect(coverage, isEmpty);
+    expect(coverage, isNotEmpty);
+
+    final Map<String, dynamic> testAppCoverage = coverage[0];
+    List<int> hits = testAppCoverage['hits'];
+
+    _expectPairs(hits, [
+      [44, 0],
+      [48, 0]
+    ]);
+
+    final Map<String, dynamic> isolateCoverage = coverage[2];
+    hits = isolateCoverage['hits'];
+    _expectPairs(hits, [
+      [9, 1],
+      [16, 1]
+    ]);
   });
 }
 
@@ -89,6 +104,7 @@ Future<Map<String, dynamic>> _collectCoverage(
 
   // Capture the VM service URI.
   final serviceUriCompleter = Completer<Uri>();
+  final isolateIdCompleter = Completer<String>();
   sampleProcess.stdout
       .transform(utf8.decoder)
       .transform(LineSplitter())
@@ -99,10 +115,27 @@ Future<Map<String, dynamic>> _collectCoverage(
         serviceUriCompleter.complete(serviceUri);
       }
     }
+    if (line.contains('isolateId = ')) {
+      isolateIdCompleter.complete(line.split(' = ')[1]);
+    }
   });
+
   final Uri serviceUri = await serviceUriCompleter.future;
-  final Set<String> isolateIdSet = isolateIds ? Set() : null;
+  final String isolateId = await isolateIdCompleter.future;
+  final Set<String> isolateIdSet =
+      isolateIds ? Set.from(<String>[isolateId]) : null;
 
   return collect(serviceUri, true, true, false, scopedOutput,
       timeout: timeout, isolateIds: isolateIdSet);
+}
+
+/// Helper function for matching hit pairs to a hitmap
+/// [hits] is the hitmap returned by the collect function
+/// [pairs] is a List of 2 value pairs in form [line, hit count]
+void _expectPairs(List<int> hits, List<List<int>> pairs) {
+  for (final pair in pairs) {
+    final int hitIndex = hits.indexOf(pair[0]);
+    expect(hits[hitIndex + 1], equals(pair[1]),
+        reason: 'Expected line ${pair[0]} to have ${pair[1]} hits');
+  }
 }

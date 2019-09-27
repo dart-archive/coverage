@@ -77,15 +77,16 @@ void main() {
     final List coverage = json['coverage'];
     expect(coverage, isNotEmpty);
 
-    final Map<String, dynamic> testAppCoverage = coverage[0];
+    final Map<String, dynamic> testAppCoverage =
+        _getScriptCoverage(coverage, 'test_app.dart');
     List<int> hits = testAppCoverage['hits'];
-
     _expectPairs(hits, [
       [44, 0],
       [48, 0]
     ]);
 
-    final Map<String, dynamic> isolateCoverage = coverage[2];
+    final Map<String, dynamic> isolateCoverage =
+        _getScriptCoverage(coverage, 'test_app_isolate.dart');
     hits = isolateCoverage['hits'];
     _expectPairs(hits, [
       [9, 1],
@@ -126,6 +127,19 @@ Future<Map<String, dynamic>> _collectCoverage(
 
   return collect(serviceUri, true, true, false, scopedOutput,
       timeout: timeout, isolateIds: isolateIdSet);
+}
+
+// Returns the first coverage hitmap for the script with with the specified
+// script filename, ignoring leading path.
+Map<String, dynamic> _getScriptCoverage(
+    List<Map<String, dynamic>> coverage, String filename) {
+  for (Map<String, dynamic> isolateCoverage in coverage) {
+    final Uri script = Uri.parse(isolateCoverage['script']['uri']);
+    if (script.pathSegments.last == filename) {
+      return isolateCoverage;
+    }
+  }
+  return null;
 }
 
 /// Helper function for matching hit pairs to a hitmap

@@ -80,18 +80,14 @@ void main() {
     final Map<String, dynamic> testAppCoverage =
         _getScriptCoverage(coverage, 'test_app.dart');
     List<int> hits = testAppCoverage['hits'];
-    _expectPairs(hits, [
-      [44, 0],
-      [48, 0]
-    ]);
+    _expectHitCount(hits, 44, 0);
+    _expectHitCount(hits, 48, 0);
 
     final Map<String, dynamic> isolateCoverage =
         _getScriptCoverage(coverage, 'test_app_isolate.dart');
     hits = isolateCoverage['hits'];
-    _expectPairs(hits, [
-      [9, 1],
-      [16, 1]
-    ]);
+    _expectHitCount(hits, 9, 1);
+    _expectHitCount(hits, 16, 1);
   });
 }
 
@@ -142,13 +138,14 @@ Map<String, dynamic> _getScriptCoverage(
   return null;
 }
 
-/// Helper function for matching hit pairs to a hitmap
-/// [hits] is the hitmap returned by the collect function
-/// [pairs] is a List of 2 value pairs in form [line, hit count]
-void _expectPairs(List<int> hits, List<List<int>> pairs) {
-  for (final pair in pairs) {
-    final int hitIndex = hits.indexOf(pair[0]);
-    expect(hits[hitIndex + 1], equals(pair[1]),
-        reason: 'Expected line ${pair[0]} to have ${pair[1]} hits');
+/// Tests that the specified hitmap has the specified hit count for the
+/// specified line.
+void _expectHitCount(List<int> hits, int line, int hitCount) {
+  final int hitIndex = hits.indexOf(line);
+  if (hitIndex < 0) {
+    fail('No hit count for line $line');
   }
+  final int actual = hits[hitIndex + 1];
+  expect(actual, equals(hitCount),
+      reason: 'Expected line $line to have $hitCount hits, but found $actual.');
 }

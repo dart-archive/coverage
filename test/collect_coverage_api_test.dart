@@ -101,10 +101,7 @@ Future<Map<String, dynamic>> _collectCoverage(
     }
   });
   final Uri serviceUri = await serviceUriCompleter.future;
-  Set<String> isolateIdSet;
-  if (isolateIds) {
-    isolateIdSet = Set<String>.from(<String>[]);
-  }
+  final Set<String> isolateIdSet = isolateIds ? Set() : null;
 
   return collect(serviceUri, true, true, false, scopedOutput,
       timeout: timeout, isolateIds: isolateIdSet);

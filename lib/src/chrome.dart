@@ -148,6 +148,7 @@ class _Position {
 
   @override
   int get hashCode => hash2(line, column);
+
   @override
   bool operator ==(dynamic o) =>
       o is _Position && o.line == line && o.column == column;

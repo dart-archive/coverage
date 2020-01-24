@@ -16,6 +16,9 @@ import 'package:source_maps/parser.dart';
 ///
 /// [sourceUriProvider] returns the uri for the provided sourceUrl and
 /// associated scriptId.
+///
+/// Chrome coverage information for which the corresponding source map or source
+/// content is null will be ignored.
 Future<Map<String, dynamic>> parseChromeCoverage(
   List<Map<String, dynamic>> preciseCoverage,
   Future<String> Function(String scriptId) sourceProvider,

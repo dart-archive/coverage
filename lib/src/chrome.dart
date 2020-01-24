@@ -13,14 +13,18 @@ import 'package:source_maps/parser.dart';
 ///
 /// [sourceMapProvider] returns the associated source map content for the Chrome
 /// scriptId, or null if not available.
+///
+/// [sourceUriProvider] returns the uri for the provided sourceUrl and
+/// associated scriptId.
 Future<Map<String, dynamic>> parseChromeCoverage(
   List<Map<String, dynamic>> preciseCoverage,
   Future<String> Function(String scriptId) sourceProvider,
   Future<String> Function(String scriptId) sourceMapProvider,
+  Future<Uri> Function(String sourceUrl, String scriptId) sourceUriProvider,
 ) async {
   final coverageReport = <Uri, Map<int, bool>>{};
-  for (var entry in preciseCoverage) {
-    final scriptId = entry['scriptId'];
+  for (Map<String, dynamic> entry in preciseCoverage) {
+    final String scriptId = entry['scriptId'];
 
     final mapResponse = await sourceMapProvider(scriptId);
     if (mapResponse == null) continue;
@@ -42,8 +46,8 @@ Future<Map<String, dynamic>> parseChromeCoverage(
         // Ignore coverage information for the SDK.
         if (sourceUrl.startsWith('org-dartlang-sdk:')) continue;
 
-        final coverage = coverageReport.putIfAbsent(
-            Uri.parse(sourceUrl), () => <int, bool>{});
+        final uri = await sourceUriProvider(sourceUrl, scriptId);
+        final coverage = coverageReport.putIfAbsent(uri, () => <int, bool>{});
 
         coverage[columnEntry.sourceLine + 1] = coveredPositions
             .contains(_Position(lineEntry.line + 1, columnEntry.column + 1));

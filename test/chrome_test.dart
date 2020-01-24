@@ -20,6 +20,9 @@ Future<String> sourceProvider(String scriptId) async {
   return File('test/test_files/main_test.ddc.js').readAsString();
 }
 
+Future<Uri> sourceUriProvider(String sourceUrl, String scriptId) async =>
+    Uri.parse(sourceUrl);
+
 void main() {
   test('reports correctly', () async {
     final preciseCoverage = json.decode(
@@ -30,6 +33,7 @@ void main() {
       (preciseCoverage as List).cast(),
       sourceProvider,
       sourceMapProvider,
+      sourceUriProvider,
     );
 
     final coverage = report['coverage'];

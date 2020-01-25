@@ -1,3 +1,7 @@
+## 0.13.5-dev
+
+* Update `parseChromeCoverage` to merge coverage information for a given line.
+
 ## 0.13.4 - 2020-01-23
 
 * Add `parseChromeCoverage` for creating a Dart based coverage report from a

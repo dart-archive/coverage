@@ -1,3 +1,7 @@
+## 0.13.5-dev
+
+* Handle source map parse errors in `parseChromeCoverage`.
+
 ## 0.13.4 - 2020-01-23
 
 * Add `parseChromeCoverage` for creating a Dart based coverage report from a

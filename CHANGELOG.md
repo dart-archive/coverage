@@ -1,4 +1,4 @@
-## 0.13.5-dev
+## 0.13.5 - 2020-01-30
 
 * Handle source map parse errors in `parseChromeCoverage`. Coverage will not be
   considered for Dart files that have corresponding invalid source maps.

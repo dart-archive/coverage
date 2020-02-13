@@ -1,3 +1,7 @@
+## 0.13.7 - 2020-02-13
+
+* Depend on `package:vm_service` version `^2.0.0`.
+
 ## 0.13.6 - 2020-02-10
 
 * Now consider all `.json` files for the `format_coverage` command.

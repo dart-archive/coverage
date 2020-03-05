@@ -14,7 +14,6 @@ dart_task:
 
 matrix:
   include:
-  # Only validate formatting using the dev release
   - dart: dev
     script: ./tool/travis.sh
     name: Collect and report coverage

@@ -4,9 +4,6 @@ dart:
   - 2.7.0
   - dev
 
-install:
-  - gem install coveralls-lcov
-
 dart_task:
   - test
   - dartanalyzer: --fatal-infos --fatal-warnings .
@@ -19,6 +16,7 @@ matrix:
     name: Collect and report coverage
 
 after_success:
+  - gem install coveralls-lcov
   - coveralls-lcov var/lcov.info
 
 # Only building master means that we don't run two builds for each pull request.

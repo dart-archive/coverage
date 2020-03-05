@@ -7,13 +7,20 @@ dart:
 install:
   - gem install coveralls-lcov
 
-script: ./tool/travis.sh
+dart_task:
+  - test
+  - dartanalyzer: --fatal-infos --fatal-warnings .
+  - dartfmt
+
+matrix:
+  include:
+  # Only validate formatting using the dev release
+  - dart: dev
+    script: ./tool/travis.sh
+    name: Collect and report coverage
 
 after_success:
   - coveralls-lcov var/lcov.info
-
-env:
-  - DARTANALYZER_FLAGS="--fatal-warnings --fatal-infos"
 
 # Only building master means that we don't run two builds for each pull request.
 branches:

@@ -52,6 +52,6 @@ void isolateTask(dynamic threeThings) {
   // coverage:ignore-end
   print('9'); // coverage:ignore-start
   print('10');
-  print('11');
+  print('11'); // coverage:ignore-line
   // coverage:ignore-end
 }

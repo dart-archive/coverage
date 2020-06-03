@@ -44,7 +44,6 @@ Future<Null> main(List<String> arguments) async {
   }
 
   final clock = Stopwatch()..start();
-  print(env.checkIgnore);
   final hitmap = await parseCoverage(
     files,
     env.workers,

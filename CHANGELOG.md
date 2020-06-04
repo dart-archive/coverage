@@ -1,3 +1,7 @@
+## 0.13.11 - 2020-03-09
+
+* Revert breaking change in 13.10
+
 ## 0.13.9 - 2020-03-09
 
 * Don't crash on empty JSON input files.

@@ -23,3 +23,7 @@ dev_dependencies:
 executables:
   collect_coverage:
   format_coverage:
+
+dependency_overrides:
+  test: 1.14.6
+  test_core: 0.3.6

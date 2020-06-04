@@ -3,6 +3,7 @@
 * Revert breaking change in 13.10
 
 ## 0.13.10 - 2020-06-03
+
 * Add flag `--check-ignore` that is used to ignore lines from coverage
   depending on the comments.
 

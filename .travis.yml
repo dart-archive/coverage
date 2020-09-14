@@ -1,5 +1,9 @@
 language: dart
 
+after_script:
+- tool/report_failure.sh
+- export
+
 dart:
   # TODO(#308): re-enable testing against stable after 2.10 release.
   # - 2.10.0

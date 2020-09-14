@@ -1,7 +1,7 @@
 language: dart
 
 after_script:
-- tool/report_failure.sh
+- tool/travis_failure_report.sh
 - export
 
 dart:

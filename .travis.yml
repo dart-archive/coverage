@@ -2,7 +2,6 @@ language: dart
 
 after_script:
 - tool/travis_failure_report.sh
-- export
 
 dart:
   # TODO(#308): re-enable testing against stable after 2.10 release.

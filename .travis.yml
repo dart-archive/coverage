@@ -14,7 +14,7 @@ dart_task:
   - dartanalyzer: --fatal-infos --fatal-warnings .
   - dartfmt
 
-matrix:
+jobs:
   include:
   - dart: dev
     script: ./tool/travis.sh

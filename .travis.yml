@@ -1,6 +1,6 @@
 language: dart
 
-after_script:
+after_failure:
 - tool/travis_failure_report.sh
 
 dart:

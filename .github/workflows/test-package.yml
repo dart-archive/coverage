@@ -74,4 +74,10 @@ jobs:
       - name: Collect and report coverage
         run: ./tool/travis.sh
         env:
-          COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}       
+          COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
+      - name: Install coveralls-lcov
+        run: gem install coveralls-lcov	
+      - name: Upload coverage
+        run: coveralls-lcov --repo-token="${COVERALLS_TOKEN}" var/lcov.info
+        env:
+          COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}

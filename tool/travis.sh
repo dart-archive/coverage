@@ -8,7 +8,7 @@
 set -e
 
 # Gather coverage and upload to Coveralls.
-if [ "$COVERALLS_TOKEN" ] && [ "$TRAVIS_DART_VERSION" = "dev" ]; then
+if [ "$COVERALLS_TOKEN" ] && [[ $(dart --version 2>&1 ) =~ '(dev)' ]]; then
   OBS_PORT=9292
   echo "Collecting coverage on port $OBS_PORT..."
 

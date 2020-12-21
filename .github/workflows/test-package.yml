@@ -73,11 +73,8 @@ jobs:
         run: dart pub get
       - name: Collect and report coverage
         run: ./tool/travis.sh
-        env:
-          COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
-      - name: Install coveralls-lcov
-        run: sudo gem install coveralls-lcov	
       - name: Upload coverage
-        run: coveralls-lcov --repo-token="${COVERALLS_TOKEN}" var/lcov.info
-        env:
-          COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
+        uses: coverallsapp/github-action@v1.1.2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: var/lcov.info

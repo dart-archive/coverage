@@ -20,6 +20,11 @@ dev_dependencies:
   test: ^1.16.0-nullsafety.4
   test_descriptor: ^1.2.0
 
+dependency_overrides:
+  test: 1.16.0-nullsafety.13 
+  test_core: 0.3.12-nullsafety.12
+  test_api: 0.2.19-nullsafety.6 
+
 executables:
   collect_coverage:
   format_coverage:

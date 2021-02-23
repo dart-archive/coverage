@@ -18,6 +18,10 @@ final _sampleAppFileUri = p.toUri(p.absolute(testAppPath)).toString();
 final _isolateLibFileUri = p.toUri(p.absolute(_isolateLibPath)).toString();
 
 void main() {
+  test('will fail', () {
+    expect(false, isTrue);
+  });
+
   test('collect throws when serviceUri is null', () {
     expect(() => collect(null, true, false, false, <String>{}),
         throwsArgumentError);

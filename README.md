@@ -61,3 +61,9 @@ collected. If `--sdk-root` is set, Dart SDK coverage will also be output.
 - `// coverage:ignore-line` to ignore one line.
 - `// coverage:ignore-start` and `// coverage:ignore-end` to ignore range of lines inclusive.
 - `// coverage:ignore-file` to ignore the whole file.
+
+#### Generating lcov.info file (used by codecov bash uploader)
+- Run test with coverage: `pub run test --coverage coverage`
+- Formatting to lcov.info: `pub global run coverage:format_coverage -i coverage/test -o coverage/lcov.info --lcov`
+
+

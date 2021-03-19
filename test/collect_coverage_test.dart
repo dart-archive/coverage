@@ -109,6 +109,25 @@ void main() {
       await tempDir.delete(recursive: true);
     }
   });
+
+  test('parseCoverage with packagesPath', () async {
+    final tempDir = await Directory.systemTemp.createTemp('coverage.test.');
+
+    try {
+      final outputFile = File(p.join(tempDir.path, 'coverage.json'));
+
+      final coverageResults = await _getCoverageResult();
+      await outputFile.writeAsString(coverageResults, flush: true);
+
+      final parsedResult =
+          await parseCoverage([outputFile], 1, packagesPath: '.packages');
+
+      expect(parsedResult, contains(_sampleAppFileUri));
+      expect(parsedResult, contains(_isolateLibFileUri));
+    } finally {
+      await tempDir.delete(recursive: true);
+    }
+  });
 }
 
 String? _coverageData;

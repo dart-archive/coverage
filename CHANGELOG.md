@@ -1,5 +1,10 @@
-## 1.1.0-dev
+## 2.0.0-dev
 
+* **BREAKING**: The signatures of `createHitmap`, `mergeHitmaps`,
+  `parseCoverage`, `toScriptCoverageJson`, and `Formatter.format` have changed
+  from using `Map<int, int>` to represent line coverage to using `HitMap`
+  (which contains both line and function coverage). `collect` also has a new
+  optional bool flag controlling whether function coverage is collected.
 * Support function level coverage information, when running tests in the Dart
    VM. This is not supported for web tests yet.
 * Add flag `--function-coverage` (abbr `-f`) to collect_coverage that collects
@@ -9,16 +14,10 @@
   line level.
 * Update `--lcov` (abbr `-l`) in format_coverage to output function level
   coverage, in addition to line level.
-* BREAKING CHANGE: The signatures of `createHitmap`, `mergeHitmaps`,
-  `parseCoverage`, `toScriptCoverageJson`, and `Formatter.format` have changed
-  from using `Map<int, int>` to represent line coverage to using `HitMap`
-  (which contains both line and function coverage). `collect` also has a new
-  optional bool flag controlling whether function coverage is collected.
 * Ensure `createHitmap` returns a sorted hitmap. This fixes a potential issue with
   ignore line annotations.
 * Use the `reportLines` flag in `vm_service`'s `getSourceReport` RPC. This
   typically halves the number of RPCs that the coverage collector needs to run.
-* Require Dart `>=2.14.0`
 
 ## 1.0.3 - 2021-05-25
 

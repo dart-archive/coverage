@@ -21,3 +21,10 @@ dev_dependencies:
 executables:
   collect_coverage:
   format_coverage:
+
+
+dependency_overrides:
+  # Temporary overrides until we can publish a version of `test` which is
+  # compatible.
+  test: 1.19.5
+  test_core: 0.4.9

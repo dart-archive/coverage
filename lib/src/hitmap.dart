@@ -10,6 +10,9 @@ import 'package:coverage/src/util.dart';
 
 /// Contains line and function hit information for a single script.
 class HitMap {
+  /// Constructs a HitMap.
+  HitMap([Map<int, int>? _lineHits]) : lineHits = _lineHits ?? <int, int>{};
+
   /// Map from line to hit count for that line.
   final Map<int, int> lineHits;
 
@@ -20,9 +23,6 @@ class HitMap {
   /// Map from the first line of each function, to the function name. Null if
   /// function coverage info was not gathered.
   Map<int, String>? funcNames;
-
-  /// Constructs a HitMap.
-  HitMap([Map<int, int>? _lineHits]) : lineHits = _lineHits ?? <int, int>{};
 }
 
 /// Class containing information about a coverage hit.
@@ -43,7 +43,7 @@ class _HitInfo {
 /// Creates a single hitmap from a raw json object. Throws away all entries that
 /// are not resolvable.
 ///
-/// [DEPRECATED] Migrate to createHitmapV2.
+/// DEPRECATED: Migrate to createHitmapV2.
 ///
 /// `jsonResult` is expected to be a List<Map<String, dynamic>>.
 Future<Map<String, Map<int, int>>> createHitmap(
@@ -180,7 +180,7 @@ Future<Map<String, HitMap>> createHitmapV2(
 
 /// Merges [newMap] into [result].
 ///
-/// [DEPRECATED] Migrate to mergeHitmapsV2.
+/// DEPRECATED: Migrate to mergeHitmapsV2.
 void mergeHitmaps(
     Map<String, Map<int, int>> newMap, Map<String, Map<int, int>> result) {
   newMap.forEach((String file, Map<int, int> v) {
@@ -235,7 +235,7 @@ void mergeHitmapsV2(Map<String, HitMap> newMap, Map<String, HitMap> result) {
 
 /// Generates a merged hitmap from a set of coverage JSON files.
 ///
-/// [DEPRECATED] Migrate to parseCoverageV2.
+/// DEPRECATED: Migrate to parseCoverageV2.
 Future<Map<String, Map<int, int>>> parseCoverage(
   Iterable<File> files,
   int _, {
@@ -275,7 +275,7 @@ Future<Map<String, HitMap>> parseCoverageV2(
 
 /// Returns a JSON hit map backward-compatible with pre-1.16.0 SDKs.
 ///
-/// [DEPRECATED] Migrate to toScriptCoverageJsonV2.
+/// DEPRECATED: Migrate to toScriptCoverageJsonV2.
 Map<String, dynamic> toScriptCoverageJson(Uri scriptUri, Map<int, int> hitMap) {
   return toScriptCoverageJsonV2(scriptUri, HitMap(hitMap));
 }

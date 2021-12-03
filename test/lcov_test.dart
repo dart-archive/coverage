@@ -51,46 +51,60 @@ void main() {
       final resolver = Resolver(packagesPath: '.packages');
       final formatter = LcovFormatter(resolver);
 
-      final res = await formatter.format(hitmap);
+      final res = await formatter
+          .format(hitmap.map((key, value) => MapEntry(key, value.lineHits)));
 
       expect(res, contains(p.absolute(_sampleAppPath)));
       expect(res, contains(p.absolute(_isolateLibPath)));
       expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
     });
 
-    test('format() includes files in reportOn list', () async {
+    test('formatV2()', () async {
+      final hitmap = await _getHitMap();
+
+      final resolver = Resolver(packagesPath: '.packages');
+      final formatter = LcovFormatter(resolver);
+
+      final res = await formatter.formatV2(hitmap);
+
+      expect(res, contains(p.absolute(_sampleAppPath)));
+      expect(res, contains(p.absolute(_isolateLibPath)));
+      expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
+    });
+
+    test('formatV2() includes files in reportOn list', () async {
       final hitmap = await _getHitMap();
 
       final resolver = Resolver(packagesPath: '.packages');
       final formatter = LcovFormatter(resolver, reportOn: ['lib/', 'test/']);
 
-      final res = await formatter.format(hitmap);
+      final res = await formatter.formatV2(hitmap);
 
       expect(res, contains(p.absolute(_sampleAppPath)));
       expect(res, contains(p.absolute(_isolateLibPath)));
       expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
     });
 
-    test('format() excludes files not in reportOn list', () async {
+    test('formatV2() excludes files not in reportOn list', () async {
       final hitmap = await _getHitMap();
 
       final resolver = Resolver(packagesPath: '.packages');
       final formatter = LcovFormatter(resolver, reportOn: ['lib/']);
 
-      final res = await formatter.format(hitmap);
+      final res = await formatter.formatV2(hitmap);
 
       expect(res, isNot(contains(p.absolute(_sampleAppPath))));
       expect(res, isNot(contains(p.absolute(_isolateLibPath))));
       expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
     });
 
-    test('format() uses paths relative to basePath', () async {
+    test('formatV2() uses paths relative to basePath', () async {
       final hitmap = await _getHitMap();
 
       final resolver = Resolver(packagesPath: '.packages');
       final formatter = LcovFormatter(resolver, basePath: p.absolute('lib'));
 
-      final res = await formatter.format(hitmap);
+      final res = await formatter.formatV2(hitmap);
 
       expect(
           res, isNot(contains(p.absolute(p.join('lib', 'src', 'util.dart')))));
@@ -105,7 +119,8 @@ void main() {
       final resolver = Resolver(packagesPath: '.packages');
       final formatter = PrettyPrintFormatter(resolver, Loader());
 
-      final res = await formatter.format(hitmap);
+      final res = await formatter
+          .format(hitmap.map((key, value) => MapEntry(key, value.lineHits)));
 
       expect(res, contains(p.absolute(_sampleAppPath)));
       expect(res, contains(p.absolute(_isolateLibPath)));
@@ -124,42 +139,67 @@ void main() {
       expect(hitCount, greaterThanOrEqualTo(1));
     });
 
-    test('format() includes files in reportOn list', () async {
+    test('formatV2()', () async {
+      final hitmap = await _getHitMap();
+
+      final resolver = Resolver(packagesPath: '.packages');
+      final formatter = PrettyPrintFormatter(resolver, Loader());
+
+      final res = await formatter.formatV2(hitmap);
+
+      expect(res, contains(p.absolute(_sampleAppPath)));
+      expect(res, contains(p.absolute(_isolateLibPath)));
+      expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
+
+      // be very careful if you change the test file
+      expect(res, contains('      0|  return a - b;'));
+
+      expect(res, contains('|  return _withTimeout(() async {'),
+          reason: 'be careful if you change lib/src/util.dart');
+
+      final hitLineRegexp = RegExp(r'\s+(\d+)\|  return a \+ b;');
+      final match = hitLineRegexp.allMatches(res).single;
+
+      final hitCount = int.parse(match[1]!);
+      expect(hitCount, greaterThanOrEqualTo(1));
+    });
+
+    test('formatV2() includes files in reportOn list', () async {
       final hitmap = await _getHitMap();
 
       final resolver = Resolver(packagesPath: '.packages');
       final formatter =
           PrettyPrintFormatter(resolver, Loader(), reportOn: ['lib/', 'test/']);
 
-      final res = await formatter.format(hitmap);
+      final res = await formatter.formatV2(hitmap);
 
       expect(res, contains(p.absolute(_sampleAppPath)));
       expect(res, contains(p.absolute(_isolateLibPath)));
       expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
     });
 
-    test('format() excludes files not in reportOn list', () async {
+    test('formatV2() excludes files not in reportOn list', () async {
       final hitmap = await _getHitMap();
 
       final resolver = Resolver(packagesPath: '.packages');
       final formatter =
           PrettyPrintFormatter(resolver, Loader(), reportOn: ['lib/']);
 
-      final res = await formatter.format(hitmap);
+      final res = await formatter.formatV2(hitmap);
 
       expect(res, isNot(contains(p.absolute(_sampleAppPath))));
       expect(res, isNot(contains(p.absolute(_isolateLibPath))));
       expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
     });
 
-    test('format() functions', () async {
+    test('formatV2() functions', () async {
       final hitmap = await _getHitMap();
 
       final resolver = Resolver(packagesPath: '.packages');
       final formatter =
           PrettyPrintFormatter(resolver, Loader(), reportFuncs: true);
 
-      final res = await formatter.format(hitmap);
+      final res = await formatter.formatV2(hitmap);
 
       expect(res, contains(p.absolute(_sampleAppPath)));
       expect(res, contains(p.absolute(_isolateLibPath)));
@@ -206,7 +246,7 @@ Future<Map<String, HitMap>> _getHitMap() async {
   // collect hit map.
   final coverageJson = (await collect(serviceUri, true, true, false, <String>{},
       functionCoverage: true))['coverage'] as List<Map<String, dynamic>>;
-  final hitMap = createHitmap(coverageJson);
+  final hitMap = createHitmapV2(coverageJson);
 
   // wait for sample app to terminate.
   final exitCode = await sampleProcess.exitCode;

@@ -77,14 +77,45 @@ void main() {
       coverage.cast<Map<String, dynamic>>(),
     );
     final expectedHits = {15: 1, 16: 2, 17: 2, 45: 1, 46: 1, 49: 0, 50: 0};
+    expect(hitMap['foo'], expectedHits);
+  });
+
+  test('createHitmapV2 returns a sorted hitmap', () async {
+    final coverage = [
+      {
+        'source': 'foo',
+        'script': '{type: @Script, fixedId: true, '
+            'id: bar.dart, uri: bar.dart, _kind: library}',
+        'hits': [
+          45,
+          1,
+          46,
+          1,
+          49,
+          0,
+          50,
+          0,
+          15,
+          1,
+          16,
+          2,
+          17,
+          2,
+        ]
+      }
+    ];
+    final hitMap = await createHitmapV2(
+      coverage.cast<Map<String, dynamic>>(),
+    );
+    final expectedHits = {15: 1, 16: 2, 17: 2, 45: 1, 46: 1, 49: 0, 50: 0};
     expect(hitMap['foo']?.lineHits, expectedHits);
   });
 
-  test('createHitmap', () async {
+  test('createHitmapV2', () async {
     final resultString = await _collectCoverage(true);
     final jsonResult = json.decode(resultString) as Map<String, dynamic>;
     final coverage = jsonResult['coverage'] as List;
-    final hitMap = await createHitmap(
+    final hitMap = await createHitmapV2(
       coverage.cast<Map<String, dynamic>>(),
     );
     expect(hitMap, contains(_sampleAppFileUri));
@@ -167,7 +198,7 @@ void main() {
     }
   });
 
-  test('parseCoverage with packagesPath and checkIgnoredLines', () async {
+  test('parseCoverageV2', () async {
     final tempDir = await Directory.systemTemp.createTemp('coverage.test.');
 
     try {
@@ -176,7 +207,25 @@ void main() {
       final coverageResults = await _getCoverageResult();
       await outputFile.writeAsString(coverageResults, flush: true);
 
-      final parsedResult = await parseCoverage([outputFile], 1,
+      final parsedResult = await parseCoverageV2([outputFile], 1);
+
+      expect(parsedResult, contains(_sampleAppFileUri));
+      expect(parsedResult, contains(_isolateLibFileUri));
+    } finally {
+      await tempDir.delete(recursive: true);
+    }
+  });
+
+  test('parseCoverageV2 with packagesPath and checkIgnoredLines', () async {
+    final tempDir = await Directory.systemTemp.createTemp('coverage.test.');
+
+    try {
+      final outputFile = File(p.join(tempDir.path, 'coverage.json'));
+
+      final coverageResults = await _getCoverageResult();
+      await outputFile.writeAsString(coverageResults, flush: true);
+
+      final parsedResult = await parseCoverageV2([outputFile], 1,
           packagesPath: '.packages', checkIgnoredLines: true);
 
       // This file has ignore:coverage-file.

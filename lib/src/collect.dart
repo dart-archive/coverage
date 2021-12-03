@@ -333,7 +333,7 @@ Future<List<Map<String, dynamic>>> _getCoverageJson(
   // Output JSON
   final coverage = <Map<String, dynamic>>[];
   hitMaps.forEach((uri, hits) {
-    coverage.add(toScriptCoverageJson(uri, hits));
+    coverage.add(toScriptCoverageJsonV2(uri, hits));
   });
   return coverage;
 }

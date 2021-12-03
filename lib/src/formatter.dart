@@ -9,7 +9,12 @@ import 'hitmap.dart';
 
 abstract class Formatter {
   /// Returns the formatted coverage data.
-  Future<String> format(Map<String, HitMap> hitmap);
+  ///
+  /// [DEPRECATED] Migrate to formatV2.
+  Future<String> format(Map<String, Map<int, int>> hitmap);
+
+  /// Returns the formatted coverage data.
+  Future<String> formatV2(Map<String, HitMap> hitmap);
 }
 
 /// Converts the given hitmap to lcov format and appends the result to
@@ -30,7 +35,12 @@ class LcovFormatter implements Formatter {
   final List<String>? reportOn;
 
   @override
-  Future<String> format(Map<String, HitMap> hitmap) async {
+  Future<String> format(Map<String, Map<int, int>> hitmap) {
+    return formatV2(hitmap.map((key, value) => MapEntry(key, HitMap(value))));
+  }
+
+  @override
+  Future<String> formatV2(Map<String, HitMap> hitmap) async {
     final pathFilter = _getPathFilter(reportOn);
     final buf = StringBuffer();
     for (var key in hitmap.keys) {
@@ -95,7 +105,12 @@ class PrettyPrintFormatter implements Formatter {
   final bool reportFuncs;
 
   @override
-  Future<String> format(Map<String, HitMap> hitmap) async {
+  Future<String> format(Map<String, Map<int, int>> hitmap) {
+    return formatV2(hitmap.map((key, value) => MapEntry(key, HitMap(value))));
+  }
+
+  @override
+  Future<String> formatV2(Map<String, HitMap> hitmap) async {
     final pathFilter = _getPathFilter(reportOn);
     final buf = StringBuffer();
     for (var key in hitmap.keys) {

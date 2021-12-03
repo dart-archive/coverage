@@ -11,7 +11,7 @@ import 'package:coverage/src/util.dart';
 /// Contains line and function hit information for a single script.
 class HitMap {
   /// Map from line to hit count for that line.
-  final lineHits = <int, int>{};
+  final Map<int, int> lineHits;
 
   /// Map from the first line of each function, to the hit count for that
   /// function. Null if function coverage info was not gathered.
@@ -20,6 +20,9 @@ class HitMap {
   /// Map from the first line of each function, to the function name. Null if
   /// function coverage info was not gathered.
   Map<int, String>? funcNames;
+
+  /// Constructs a HitMap.
+  HitMap([Map<int, int>? _lineHits]) : lineHits = _lineHits ?? <int, int>{};
 }
 
 /// Class containing information about a coverage hit.
@@ -40,8 +43,27 @@ class _HitInfo {
 /// Creates a single hitmap from a raw json object. Throws away all entries that
 /// are not resolvable.
 ///
+/// [DEPRECATED] Migrate to createHitmapV2.
+///
 /// `jsonResult` is expected to be a List<Map<String, dynamic>>.
-Future<Map<String, HitMap>> createHitmap(
+Future<Map<String, Map<int, int>>> createHitmap(
+  List<Map<String, dynamic>> jsonResult, {
+  bool checkIgnoredLines = false,
+  String? packagesPath,
+}) async {
+  final result = await createHitmapV2(
+    jsonResult,
+    checkIgnoredLines: checkIgnoredLines,
+    packagesPath: packagesPath,
+  );
+  return result.map((key, value) => MapEntry(key, value.lineHits));
+}
+
+/// Creates a single hitmap from a raw json object. Throws away all entries that
+/// are not resolvable.
+///
+/// `jsonResult` is expected to be a List<Map<String, dynamic>>.
+Future<Map<String, HitMap>> createHitmapV2(
   List<Map<String, dynamic>> jsonResult, {
   bool checkIgnoredLines = false,
   String? packagesPath,
@@ -157,7 +179,29 @@ Future<Map<String, HitMap>> createHitmap(
 }
 
 /// Merges [newMap] into [result].
-void mergeHitmaps(Map<String, HitMap> newMap, Map<String, HitMap> result) {
+///
+/// [DEPRECATED] Migrate to mergeHitmapsV2.
+void mergeHitmaps(
+    Map<String, Map<int, int>> newMap, Map<String, Map<int, int>> result) {
+  newMap.forEach((String file, Map<int, int> v) {
+    final fileResult = result[file];
+    if (fileResult != null) {
+      v.forEach((int line, int cnt) {
+        final lineFileResult = fileResult[line];
+        if (lineFileResult == null) {
+          fileResult[line] = cnt;
+        } else {
+          fileResult[line] = lineFileResult + cnt;
+        }
+      });
+    } else {
+      result[file] = v;
+    }
+  });
+}
+
+/// Merges [newMap] into [result].
+void mergeHitmapsV2(Map<String, HitMap> newMap, Map<String, HitMap> result) {
   newMap.forEach((String file, HitMap v) {
     final fileResult = result[file];
     if (fileResult != null) {
@@ -190,7 +234,21 @@ void mergeHitmaps(Map<String, HitMap> newMap, Map<String, HitMap> result) {
 }
 
 /// Generates a merged hitmap from a set of coverage JSON files.
-Future<Map<String, HitMap>> parseCoverage(
+///
+/// [DEPRECATED] Migrate to parseCoverageV2.
+Future<Map<String, Map<int, int>>> parseCoverage(
+  Iterable<File> files,
+  int _, {
+  bool checkIgnoredLines = false,
+  String? packagesPath,
+}) async {
+  final result = await parseCoverageV2(files, _,
+      checkIgnoredLines: checkIgnoredLines, packagesPath: packagesPath);
+  return result.map((key, value) => MapEntry(key, value.lineHits));
+}
+
+/// Generates a merged hitmap from a set of coverage JSON files.
+Future<Map<String, HitMap>> parseCoverageV2(
   Iterable<File> files,
   int _, {
   bool checkIgnoredLines = false,
@@ -202,8 +260,8 @@ Future<Map<String, HitMap>> parseCoverage(
     final jsonMap = json.decode(contents) as Map<String, dynamic>;
     if (jsonMap.containsKey('coverage')) {
       final jsonResult = jsonMap['coverage'] as List;
-      mergeHitmaps(
-        await createHitmap(
+      mergeHitmapsV2(
+        await createHitmapV2(
           jsonResult.cast<Map<String, dynamic>>(),
           checkIgnoredLines: checkIgnoredLines,
           packagesPath: packagesPath,
@@ -216,7 +274,14 @@ Future<Map<String, HitMap>> parseCoverage(
 }
 
 /// Returns a JSON hit map backward-compatible with pre-1.16.0 SDKs.
-Map<String, dynamic> toScriptCoverageJson(Uri scriptUri, HitMap hits) {
+///
+/// [DEPRECATED] Migrate to toScriptCoverageJsonV2.
+Map<String, dynamic> toScriptCoverageJson(Uri scriptUri, Map<int, int> hitMap) {
+  return toScriptCoverageJsonV2(scriptUri, HitMap(hitMap));
+}
+
+/// Returns a JSON hit map backward-compatible with pre-1.16.0 SDKs.
+Map<String, dynamic> toScriptCoverageJsonV2(Uri scriptUri, HitMap hits) {
   final json = <String, dynamic>{};
   List<T> flattenMap<T>(Map map) {
     final kvs = <T>[];

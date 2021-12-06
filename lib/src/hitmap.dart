@@ -11,7 +11,8 @@ import 'package:coverage/src/util.dart';
 /// Contains line and function hit information for a single script.
 class HitMap {
   /// Constructs a HitMap.
-  HitMap([Map<int, int>? _lineHits]) : lineHits = _lineHits ?? <int, int>{};
+  HitMap([Map<int, int>? _lineHits, this.funcHits, this.funcNames])
+      : lineHits = _lineHits ?? <int, int>{};
 
   /// Map from line to hit count for that line.
   final Map<int, int> lineHits;

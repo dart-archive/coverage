@@ -235,6 +235,52 @@ void main() {
       await tempDir.delete(recursive: true);
     }
   });
+
+  test('mergeHitmaps', () {
+    final resultMap = <String, Map<int, int>>{
+      "foo.dart": {10: 2, 20: 0},
+      "bar.dart": {10: 3, 20: 1, 30: 0},
+    };
+    final newMap = <String, Map<int, int>>{
+      "bar.dart": {10: 2, 20: 0, 40: 3},
+      "baz.dart": {10: 1, 20: 0, 30: 1},
+    };
+    mergeHitmaps(newMap, resultMap);
+    expect(resultMap, <String, Map<int, int>>{
+      "foo.dart": {10: 2, 20: 0},
+      "bar.dart": {10: 5, 20: 1, 30: 0, 40: 3},
+      "baz.dart": {10: 1, 20: 0, 30: 1},
+    });
+  });
+
+  test('mergeHitmapsV2', () {
+    final resultMap = <String, HitMap>{
+      "foo.dart":
+          HitMap({10: 2, 20: 0}, {15: 0, 25: 1}, {15: "bobble", 25: "cobble"}),
+      "bar.dart": HitMap(
+          {10: 3, 20: 1, 30: 0}, {15: 5, 25: 0}, {15: "gobble", 25: "wobble"}),
+    };
+    final newMap = <String, HitMap>{
+      "bar.dart": HitMap(
+          {10: 2, 20: 0, 40: 3}, {15: 1, 35: 4}, {15: "gobble", 35: "dobble"}),
+      "baz.dart": HitMap(
+          {10: 1, 20: 0, 30: 1}, {15: 0, 25: 2}, {15: "lobble", 25: "zobble"}),
+    };
+    mergeHitmapsV2(newMap, resultMap);
+    expect(resultMap["foo.dart"]?.lineHits, <int, int>{10: 2, 20: 0});
+    expect(resultMap["foo.dart"]?.funcHits, <int, int>{15: 0, 25: 1});
+    expect(resultMap["foo.dart"]?.funcNames,
+        <int, String>{15: "bobble", 25: "cobble"});
+    expect(resultMap["bar.dart"]?.lineHits,
+        <int, int>{10: 5, 20: 1, 30: 0, 40: 3});
+    expect(resultMap["bar.dart"]?.funcHits, <int, int>{15: 6, 25: 0, 35: 4});
+    expect(resultMap["bar.dart"]?.funcNames,
+        <int, String>{15: "gobble", 25: "wobble", 35: "dobble"});
+    expect(resultMap["baz.dart"]?.lineHits, <int, int>{10: 1, 20: 0, 30: 1});
+    expect(resultMap["baz.dart"]?.funcHits, <int, int>{15: 0, 25: 2});
+    expect(resultMap["baz.dart"]?.funcNames,
+        <int, String>{15: "lobble", 25: "zobble"});
+  });
 }
 
 String? _coverageData;

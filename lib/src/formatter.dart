@@ -9,8 +9,7 @@ import 'hitmap.dart';
 
 abstract class Formatter {
   /// Returns the formatted coverage data.
-  ///
-  /// DEPRECATED: Migrate to formatV2.
+  @Deprecated('Migrate to formatV2')
   Future<String> format(Map<String, Map<int, int>> hitmap);
 
   /// Returns the formatted coverage data.

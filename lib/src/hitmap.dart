@@ -11,8 +11,8 @@ import 'package:coverage/src/util.dart';
 /// Contains line and function hit information for a single script.
 class HitMap {
   /// Constructs a HitMap.
-  HitMap([Map<int, int>? _lineHits, this.funcHits, this.funcNames])
-      : lineHits = _lineHits ?? <int, int>{};
+  HitMap([Map<int, int>? lineHits, this.funcHits, this.funcNames])
+      : lineHits = lineHits ?? {};
 
   /// Map from line to hit count for that line.
   final Map<int, int> lineHits;
@@ -41,12 +41,10 @@ class _HitInfo {
   final int hitCount;
 }
 
-/// Creates a single hitmap from a raw json object. Throws away all entries that
-/// are not resolvable.
+/// Creates a single hitmap from a raw json object.
 ///
-/// DEPRECATED: Migrate to createHitmapV2.
-///
-/// `jsonResult` is expected to be a List<Map<String, dynamic>>.
+/// Throws away all entries that are not resolvable.
+@Deprecated('Migrate to createHitmapV2')
 Future<Map<String, Map<int, int>>> createHitmap(
   List<Map<String, dynamic>> jsonResult, {
   bool checkIgnoredLines = false,
@@ -60,10 +58,9 @@ Future<Map<String, Map<int, int>>> createHitmap(
   return result.map((key, value) => MapEntry(key, value.lineHits));
 }
 
-/// Creates a single hitmap from a raw json object. Throws away all entries that
-/// are not resolvable.
+/// Creates a single hitmap from a raw json object.
 ///
-/// `jsonResult` is expected to be a List<Map<String, dynamic>>.
+/// Throws away all entries that are not resolvable.
 Future<Map<String, HitMap>> createHitmapV2(
   List<Map<String, dynamic>> jsonResult, {
   bool checkIgnoredLines = false,
@@ -180,19 +177,18 @@ Future<Map<String, HitMap>> createHitmapV2(
 }
 
 /// Merges [newMap] into [result].
-///
-/// DEPRECATED: Migrate to mergeHitmapsV2.
+@Deprecated('Migrate to mergeHitmapsV2')
 void mergeHitmaps(
     Map<String, Map<int, int>> newMap, Map<String, Map<int, int>> result) {
-  newMap.forEach((String file, Map<int, int> v) {
+  newMap.forEach((file, v) {
     final fileResult = result[file];
     if (fileResult != null) {
-      v.forEach((int line, int cnt) {
+      v.forEach((line, count) {
         final lineFileResult = fileResult[line];
         if (lineFileResult == null) {
-          fileResult[line] = cnt;
+          fileResult[line] = count;
         } else {
-          fileResult[line] = lineFileResult + cnt;
+          fileResult[line] = lineFileResult + count;
         }
       });
     } else {
@@ -203,16 +199,16 @@ void mergeHitmaps(
 
 /// Merges [newMap] into [result].
 void mergeHitmapsV2(Map<String, HitMap> newMap, Map<String, HitMap> result) {
-  newMap.forEach((String file, HitMap v) {
+  newMap.forEach((file, v) {
     final fileResult = result[file];
     if (fileResult != null) {
       void mergeHitCounts(Map<int, int> src, Map<int, int> dest) {
-        src.forEach((int line, int cnt) {
+        src.forEach((line, count) {
           final lineFileResult = dest[line];
           if (lineFileResult == null) {
-            dest[line] = cnt;
+            dest[line] = count;
           } else {
-            dest[line] = lineFileResult + cnt;
+            dest[line] = lineFileResult + count;
           }
         });
       }
@@ -224,7 +220,7 @@ void mergeHitmapsV2(Map<String, HitMap> newMap, Map<String, HitMap> result) {
       }
       if (v.funcNames != null) {
         fileResult.funcNames ??= <int, String>{};
-        v.funcNames?.forEach((int line, String name) {
+        v.funcNames?.forEach((line, name) {
           fileResult.funcNames![line] = name;
         });
       }
@@ -235,8 +231,7 @@ void mergeHitmapsV2(Map<String, HitMap> newMap, Map<String, HitMap> result) {
 }
 
 /// Generates a merged hitmap from a set of coverage JSON files.
-///
-/// DEPRECATED: Migrate to parseCoverageV2.
+@Deprecated('Migrate to parseCoverageV2')
 Future<Map<String, Map<int, int>>> parseCoverage(
   Iterable<File> files,
   int _, {
@@ -275,8 +270,7 @@ Future<Map<String, HitMap>> parseCoverageV2(
 }
 
 /// Returns a JSON hit map backward-compatible with pre-1.16.0 SDKs.
-///
-/// DEPRECATED: Migrate to toScriptCoverageJsonV2.
+@Deprecated('Migrate to toScriptCoverageJsonV2')
 Map<String, dynamic> toScriptCoverageJson(Uri scriptUri, Map<int, int> hitMap) {
   return toScriptCoverageJsonV2(scriptUri, HitMap(hitMap));
 }

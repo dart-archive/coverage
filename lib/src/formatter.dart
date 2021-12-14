@@ -33,6 +33,7 @@ class LcovFormatter implements Formatter {
   final String? basePath;
   final List<String>? reportOn;
 
+  @Deprecated('Migrate to formatV2')
   @override
   Future<String> format(Map<String, Map<int, int>> hitmap) {
     return formatV2(hitmap.map((key, value) => MapEntry(key, HitMap(value))));
@@ -103,6 +104,7 @@ class PrettyPrintFormatter implements Formatter {
   final List<String>? reportOn;
   final bool reportFuncs;
 
+  @Deprecated('Migrate to formatV2')
   @override
   Future<String> format(Map<String, Map<int, int>> hitmap) {
     return formatV2(hitmap.map((key, value) => MapEntry(key, HitMap(value))));

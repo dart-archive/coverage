@@ -58,7 +58,7 @@ Future<void> main(List<String> arguments) async {
   }
 
   final clock = Stopwatch()..start();
-  final hitmap = await parseCoverage(
+  final hitmap = await parseCoverageV2(
     files,
     env.workers,
     checkIgnoredLines: env.checkIgnore,
@@ -78,12 +78,12 @@ Future<void> main(List<String> arguments) async {
   if (env.prettyPrint || env.prettyPrintFunc) {
     output = await PrettyPrintFormatter(resolver, loader,
             reportOn: env.reportOn, reportFuncs: env.prettyPrintFunc)
-        .format(hitmap);
+        .formatV2(hitmap);
   } else {
     assert(env.lcov);
     output = await LcovFormatter(resolver,
             reportOn: env.reportOn, basePath: env.baseDirectory)
-        .format(hitmap);
+        .formatV2(hitmap);
   }
 
   env.output.write(output);

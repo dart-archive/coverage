@@ -73,6 +73,7 @@ void main() {
         ]
       }
     ];
+    // ignore: deprecated_member_use_from_same_package
     final hitMap = await createHitmap(
       coverage.cast<Map<String, dynamic>>(),
     );
@@ -189,6 +190,7 @@ void main() {
       final coverageResults = await _getCoverageResult();
       await outputFile.writeAsString(coverageResults, flush: true);
 
+      // ignore: deprecated_member_use_from_same_package
       final parsedResult = await parseCoverage([outputFile], 1);
 
       expect(parsedResult, contains(_sampleAppFileUri));
@@ -245,6 +247,7 @@ void main() {
       "bar.dart": {10: 2, 20: 0, 40: 3},
       "baz.dart": {10: 1, 20: 0, 30: 1},
     };
+    // ignore: deprecated_member_use_from_same_package
     mergeHitmaps(newMap, resultMap);
     expect(resultMap, <String, Map<int, int>>{
       "foo.dart": {10: 2, 20: 0},

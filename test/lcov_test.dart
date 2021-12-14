@@ -52,6 +52,7 @@ void main() {
       final formatter = LcovFormatter(resolver);
 
       final res = await formatter
+          // ignore: deprecated_member_use_from_same_package
           .format(hitmap.map((key, value) => MapEntry(key, value.lineHits)));
 
       expect(res, contains(p.absolute(_sampleAppPath)));
@@ -120,6 +121,7 @@ void main() {
       final formatter = PrettyPrintFormatter(resolver, Loader());
 
       final res = await formatter
+          // ignore: deprecated_member_use_from_same_package
           .format(hitmap.map((key, value) => MapEntry(key, value.lineHits)));
 
       expect(res, contains(p.absolute(_sampleAppPath)));

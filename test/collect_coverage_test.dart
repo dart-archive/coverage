@@ -81,7 +81,7 @@ void main() {
     expect(hitMap['foo'], expectedHits);
   });
 
-  test('createHitmapV2 returns a sorted hitmap', () async {
+  test('HitMap.parseJson returns a sorted hitmap', () async {
     final coverage = [
       {
         'source': 'foo',
@@ -105,18 +105,18 @@ void main() {
         ]
       }
     ];
-    final hitMap = await createHitmapV2(
+    final hitMap = await HitMap.parseJson(
       coverage.cast<Map<String, dynamic>>(),
     );
     final expectedHits = {15: 1, 16: 2, 17: 2, 45: 1, 46: 1, 49: 0, 50: 0};
     expect(hitMap['foo']?.lineHits, expectedHits);
   });
 
-  test('createHitmapV2', () async {
+  test('HitMap.parseJson', () async {
     final resultString = await _collectCoverage(true);
     final jsonResult = json.decode(resultString) as Map<String, dynamic>;
     final coverage = jsonResult['coverage'] as List;
-    final hitMap = await createHitmapV2(
+    final hitMap = await HitMap.parseJson(
       coverage.cast<Map<String, dynamic>>(),
     );
     expect(hitMap, contains(_sampleAppFileUri));
@@ -200,7 +200,7 @@ void main() {
     }
   });
 
-  test('parseCoverageV2', () async {
+  test('HitMap.parseFiles', () async {
     final tempDir = await Directory.systemTemp.createTemp('coverage.test.');
 
     try {
@@ -209,7 +209,7 @@ void main() {
       final coverageResults = await _getCoverageResult();
       await outputFile.writeAsString(coverageResults, flush: true);
 
-      final parsedResult = await parseCoverageV2([outputFile], 1);
+      final parsedResult = await HitMap.parseFiles([outputFile]);
 
       expect(parsedResult, contains(_sampleAppFileUri));
       expect(parsedResult, contains(_isolateLibFileUri));
@@ -218,7 +218,7 @@ void main() {
     }
   });
 
-  test('parseCoverageV2 with packagesPath and checkIgnoredLines', () async {
+  test('HitMap.parseFiles with packagesPath and checkIgnoredLines', () async {
     final tempDir = await Directory.systemTemp.createTemp('coverage.test.');
 
     try {
@@ -227,7 +227,7 @@ void main() {
       final coverageResults = await _getCoverageResult();
       await outputFile.writeAsString(coverageResults, flush: true);
 
-      final parsedResult = await parseCoverageV2([outputFile], 1,
+      final parsedResult = await HitMap.parseFiles([outputFile],
           packagesPath: '.packages', checkIgnoredLines: true);
 
       // This file has ignore:coverage-file.
@@ -256,7 +256,7 @@ void main() {
     });
   });
 
-  test('mergeHitmapsV2', () {
+  test('FileHitMaps.merge', () {
     final resultMap = <String, HitMap>{
       "foo.dart":
           HitMap({10: 2, 20: 0}, {15: 0, 25: 1}, {15: "bobble", 25: "cobble"}),
@@ -269,7 +269,7 @@ void main() {
       "baz.dart": HitMap(
           {10: 1, 20: 0, 30: 1}, {15: 0, 25: 2}, {15: "lobble", 25: "zobble"}),
     };
-    mergeHitmapsV2(newMap, resultMap);
+    resultMap.merge(newMap);
     expect(resultMap["foo.dart"]?.lineHits, <int, int>{10: 2, 20: 0});
     expect(resultMap["foo.dart"]?.funcHits, <int, int>{15: 0, 25: 1});
     expect(resultMap["foo.dart"]?.funcNames,

@@ -24,6 +24,215 @@ class HitMap {
   /// Map from the first line of each function, to the function name. Null if
   /// function coverage info was not gathered.
   Map<int, String>? funcNames;
+
+
+  /// Creates a single hitmap from a raw json object.
+  ///
+  /// Throws away all entries that are not resolvable.
+  static Future<Map<String, HitMap>> parseJson(
+    List<Map<String, dynamic>> jsonResult, {
+    bool checkIgnoredLines = false,
+    String? packagesPath,
+  }) async {
+    final resolver = Resolver(packagesPath: packagesPath);
+    final loader = Loader();
+
+    // Map of source file to map of line to hit count for that line.
+    final globalHitMap = <String, HitMap>{};
+
+    for (var e in jsonResult) {
+      final source = e['source'] as String?;
+      if (source == null) {
+        // Couldn't resolve import, so skip this entry.
+        continue;
+      }
+
+      var ignoredLinesList = <List<int>>[];
+
+      if (checkIgnoredLines) {
+        final path = resolver.resolve(source);
+        if (path != null) {
+          final lines = await loader.load(path);
+          ignoredLinesList = getIgnoredLines(lines!);
+
+          // Ignore the whole file.
+          if (ignoredLinesList.length == 1 &&
+              ignoredLinesList[0][0] == 0 &&
+              ignoredLinesList[0][1] == lines.length) {
+            continue;
+          }
+        }
+      }
+
+      // Move to the first ignore range.
+      final ignoredLines = ignoredLinesList.iterator;
+      var hasCurrent = ignoredLines.moveNext();
+
+      bool _shouldIgnoreLine(Iterator<List<int>> ignoredRanges, int line) {
+        if (!hasCurrent || ignoredRanges.current.isEmpty) {
+          return false;
+        }
+
+        if (line < ignoredRanges.current[0]) return false;
+
+        while (hasCurrent &&
+            ignoredRanges.current.isNotEmpty &&
+            ignoredRanges.current[1] < line) {
+          hasCurrent = ignoredRanges.moveNext();
+        }
+
+        if (hasCurrent &&
+            ignoredRanges.current.isNotEmpty &&
+            ignoredRanges.current[0] <= line &&
+            line <= ignoredRanges.current[1]) {
+          return true;
+        }
+
+        return false;
+      }
+
+      void addToMap(Map<int, int> map, int line, int count) {
+        final oldCount = map.putIfAbsent(line, () => 0);
+        map[line] = count + oldCount;
+      }
+
+      void fillHitMap(List hits, Map<int, int> hitMap) {
+        // Ignore line annotations require hits to be sorted.
+        hits = _sortHits(hits);
+        // hits is a flat array of the following format:
+        // [ <line|linerange>, <hitcount>,...]
+        // line: number.
+        // linerange: '<line>-<line>'.
+        for (var i = 0; i < hits.length; i += 2) {
+          final k = hits[i];
+          if (k is int) {
+            // Single line.
+            if (_shouldIgnoreLine(ignoredLines, k)) continue;
+
+            addToMap(hitMap, k, hits[i + 1] as int);
+          } else if (k is String) {
+            // Linerange. We expand line ranges to actual lines at this point.
+            final splitPos = k.indexOf('-');
+            final start = int.parse(k.substring(0, splitPos));
+            final end = int.parse(k.substring(splitPos + 1));
+            for (var j = start; j <= end; j++) {
+              if (_shouldIgnoreLine(ignoredLines, j)) continue;
+
+              addToMap(hitMap, j, hits[i + 1] as int);
+            }
+          } else {
+            throw StateError('Expected value of type int or String');
+          }
+        }
+      }
+
+      final sourceHitMap = globalHitMap.putIfAbsent(source, () => HitMap());
+      fillHitMap(e['hits'] as List, sourceHitMap.lineHits);
+      if (e.containsKey('funcHits')) {
+        sourceHitMap.funcHits ??= <int, int>{};
+        fillHitMap(e['funcHits'] as List, sourceHitMap.funcHits!);
+      }
+      if (e.containsKey('funcNames')) {
+        sourceHitMap.funcNames ??= <int, String>{};
+        final funcNames = e['funcNames'] as List;
+        for (var i = 0; i < funcNames.length; i += 2) {
+          sourceHitMap.funcNames![funcNames[i] as int] =
+              funcNames[i + 1] as String;
+        }
+      }
+    }
+    return globalHitMap;
+  }
+
+  /// Generates a merged hitmap from a set of coverage JSON files.
+  static Future<Map<String, HitMap>> parseFiles(
+    Iterable<File> files, {
+    bool checkIgnoredLines = false,
+    String? packagesPath,
+  }) async {
+    final globalHitmap = <String, HitMap>{};
+    for (var file in files) {
+      final contents = file.readAsStringSync();
+      final jsonMap = json.decode(contents) as Map<String, dynamic>;
+      if (jsonMap.containsKey('coverage')) {
+        final jsonResult = jsonMap['coverage'] as List;
+        globalHitmap.merge(
+          await HitMap.parseJson(
+            jsonResult.cast<Map<String, dynamic>>(),
+            checkIgnoredLines: checkIgnoredLines,
+            packagesPath: packagesPath,
+          )
+        );
+      }
+    }
+    return globalHitmap;
+  }
+
+
+  List<T> _flattenMap<T>(Map map) {
+    final kvs = <T>[];
+    map.forEach((k, v) {
+      kvs.add(k as T);
+      kvs.add(v as T);
+    });
+    return kvs;
+  }
+
+  /// Returns a JSON hit map backward-compatible with pre-1.16.0 SDKs.
+  Map<String, dynamic> toJson(Uri scriptUri) {
+    final json = <String, dynamic>{};
+    json['source'] = '$scriptUri';
+    json['script'] = {
+      'type': '@Script',
+      'fixedId': true,
+      'id': 'libraries/1/scripts/${Uri.encodeComponent(scriptUri.toString())}',
+      'uri': '$scriptUri',
+      '_kind': 'library',
+    };
+    json['hits'] = _flattenMap<int>(lineHits);
+    if (funcHits != null) {
+      json['funcHits'] = _flattenMap<int>(funcHits!);
+    }
+    if (funcNames != null) {
+      json['funcNames'] = _flattenMap<dynamic>(funcNames!);
+    }
+    return json;
+  }
+}
+
+extension FileHitMaps on Map<String, HitMap> {
+  /// Merges [newMap] into this one.
+  void merge(Map<String, HitMap> newMap) {
+    newMap.forEach((file, v) {
+      final fileResult = this[file];
+      if (fileResult != null) {
+        _mergeHitCounts(v.lineHits, fileResult.lineHits);
+        if (v.funcHits != null) {
+          fileResult.funcHits ??= <int, int>{};
+          _mergeHitCounts(v.funcHits!, fileResult.funcHits!);
+        }
+        if (v.funcNames != null) {
+          fileResult.funcNames ??= <int, String>{};
+          v.funcNames?.forEach((line, name) {
+            fileResult.funcNames![line] = name;
+          });
+        }
+      } else {
+        this[file] = v;
+      }
+    });
+  }
+
+  static void _mergeHitCounts(Map<int, int> src, Map<int, int> dest) {
+    src.forEach((line, count) {
+      final lineFileResult = dest[line];
+      if (lineFileResult == null) {
+        dest[line] = count;
+      } else {
+        dest[line] = lineFileResult + count;
+      }
+    });
+  }
 }
 
 /// Class containing information about a coverage hit.
@@ -44,13 +253,13 @@ class _HitInfo {
 /// Creates a single hitmap from a raw json object.
 ///
 /// Throws away all entries that are not resolvable.
-@Deprecated('Migrate to createHitmapV2')
+@Deprecated('Migrate to HitMap.parseJson')
 Future<Map<String, Map<int, int>>> createHitmap(
   List<Map<String, dynamic>> jsonResult, {
   bool checkIgnoredLines = false,
   String? packagesPath,
 }) async {
-  final result = await createHitmapV2(
+  final result = await HitMap.parseJson(
     jsonResult,
     checkIgnoredLines: checkIgnoredLines,
     packagesPath: packagesPath,
@@ -58,126 +267,8 @@ Future<Map<String, Map<int, int>>> createHitmap(
   return result.map((key, value) => MapEntry(key, value.lineHits));
 }
 
-/// Creates a single hitmap from a raw json object.
-///
-/// Throws away all entries that are not resolvable.
-Future<Map<String, HitMap>> createHitmapV2(
-  List<Map<String, dynamic>> jsonResult, {
-  bool checkIgnoredLines = false,
-  String? packagesPath,
-}) async {
-  final resolver = Resolver(packagesPath: packagesPath);
-  final loader = Loader();
-
-  // Map of source file to map of line to hit count for that line.
-  final globalHitMap = <String, HitMap>{};
-
-  for (var e in jsonResult) {
-    final source = e['source'] as String?;
-    if (source == null) {
-      // Couldn't resolve import, so skip this entry.
-      continue;
-    }
-
-    var ignoredLinesList = <List<int>>[];
-
-    if (checkIgnoredLines) {
-      final path = resolver.resolve(source);
-      if (path != null) {
-        final lines = await loader.load(path);
-        ignoredLinesList = getIgnoredLines(lines!);
-
-        // Ignore the whole file.
-        if (ignoredLinesList.length == 1 &&
-            ignoredLinesList[0][0] == 0 &&
-            ignoredLinesList[0][1] == lines.length) {
-          continue;
-        }
-      }
-    }
-
-    // Move to the first ignore range.
-    final ignoredLines = ignoredLinesList.iterator;
-    var hasCurrent = ignoredLines.moveNext();
-
-    bool _shouldIgnoreLine(Iterator<List<int>> ignoredRanges, int line) {
-      if (!hasCurrent || ignoredRanges.current.isEmpty) {
-        return false;
-      }
-
-      if (line < ignoredRanges.current[0]) return false;
-
-      while (hasCurrent &&
-          ignoredRanges.current.isNotEmpty &&
-          ignoredRanges.current[1] < line) {
-        hasCurrent = ignoredRanges.moveNext();
-      }
-
-      if (hasCurrent &&
-          ignoredRanges.current.isNotEmpty &&
-          ignoredRanges.current[0] <= line &&
-          line <= ignoredRanges.current[1]) {
-        return true;
-      }
-
-      return false;
-    }
-
-    void addToMap(Map<int, int> map, int line, int count) {
-      final oldCount = map.putIfAbsent(line, () => 0);
-      map[line] = count + oldCount;
-    }
-
-    void fillHitMap(List hits, Map<int, int> hitMap) {
-      // Ignore line annotations require hits to be sorted.
-      hits = _sortHits(hits);
-      // hits is a flat array of the following format:
-      // [ <line|linerange>, <hitcount>,...]
-      // line: number.
-      // linerange: '<line>-<line>'.
-      for (var i = 0; i < hits.length; i += 2) {
-        final k = hits[i];
-        if (k is int) {
-          // Single line.
-          if (_shouldIgnoreLine(ignoredLines, k)) continue;
-
-          addToMap(hitMap, k, hits[i + 1] as int);
-        } else if (k is String) {
-          // Linerange. We expand line ranges to actual lines at this point.
-          final splitPos = k.indexOf('-');
-          final start = int.parse(k.substring(0, splitPos));
-          final end = int.parse(k.substring(splitPos + 1));
-          for (var j = start; j <= end; j++) {
-            if (_shouldIgnoreLine(ignoredLines, j)) continue;
-
-            addToMap(hitMap, j, hits[i + 1] as int);
-          }
-        } else {
-          throw StateError('Expected value of type int or String');
-        }
-      }
-    }
-
-    final sourceHitMap = globalHitMap.putIfAbsent(source, () => HitMap());
-    fillHitMap(e['hits'] as List, sourceHitMap.lineHits);
-    if (e.containsKey('funcHits')) {
-      sourceHitMap.funcHits ??= <int, int>{};
-      fillHitMap(e['funcHits'] as List, sourceHitMap.funcHits!);
-    }
-    if (e.containsKey('funcNames')) {
-      sourceHitMap.funcNames ??= <int, String>{};
-      final funcNames = e['funcNames'] as List;
-      for (var i = 0; i < funcNames.length; i += 2) {
-        sourceHitMap.funcNames![funcNames[i] as int] =
-            funcNames[i + 1] as String;
-      }
-    }
-  }
-  return globalHitMap;
-}
-
 /// Merges [newMap] into [result].
-@Deprecated('Migrate to mergeHitmapsV2')
+@Deprecated('Migrate to HitMap.mergeWith')
 void mergeHitmaps(
     Map<String, Map<int, int>> newMap, Map<String, Map<int, int>> result) {
   newMap.forEach((file, v) {
@@ -197,86 +288,26 @@ void mergeHitmaps(
   });
 }
 
-/// Merges [newMap] into [result].
-void mergeHitmapsV2(Map<String, HitMap> newMap, Map<String, HitMap> result) {
-  newMap.forEach((file, v) {
-    final fileResult = result[file];
-    if (fileResult != null) {
-      void mergeHitCounts(Map<int, int> src, Map<int, int> dest) {
-        src.forEach((line, count) {
-          final lineFileResult = dest[line];
-          if (lineFileResult == null) {
-            dest[line] = count;
-          } else {
-            dest[line] = lineFileResult + count;
-          }
-        });
-      }
-
-      mergeHitCounts(v.lineHits, fileResult.lineHits);
-      if (v.funcHits != null) {
-        fileResult.funcHits ??= <int, int>{};
-        mergeHitCounts(v.funcHits!, fileResult.funcHits!);
-      }
-      if (v.funcNames != null) {
-        fileResult.funcNames ??= <int, String>{};
-        v.funcNames?.forEach((line, name) {
-          fileResult.funcNames![line] = name;
-        });
-      }
-    } else {
-      result[file] = v;
-    }
-  });
-}
-
 /// Generates a merged hitmap from a set of coverage JSON files.
-@Deprecated('Migrate to parseCoverageV2')
+@Deprecated('Migrate to HitMap.parseFiles')
 Future<Map<String, Map<int, int>>> parseCoverage(
   Iterable<File> files,
   int _, {
   bool checkIgnoredLines = false,
   String? packagesPath,
 }) async {
-  final result = await parseCoverageV2(files, _,
+  final result = await HitMap.parseFiles(files,
       checkIgnoredLines: checkIgnoredLines, packagesPath: packagesPath);
   return result.map((key, value) => MapEntry(key, value.lineHits));
 }
 
-/// Generates a merged hitmap from a set of coverage JSON files.
-Future<Map<String, HitMap>> parseCoverageV2(
-  Iterable<File> files,
-  int _, {
-  bool checkIgnoredLines = false,
-  String? packagesPath,
-}) async {
-  final globalHitmap = <String, HitMap>{};
-  for (var file in files) {
-    final contents = file.readAsStringSync();
-    final jsonMap = json.decode(contents) as Map<String, dynamic>;
-    if (jsonMap.containsKey('coverage')) {
-      final jsonResult = jsonMap['coverage'] as List;
-      mergeHitmapsV2(
-        await createHitmapV2(
-          jsonResult.cast<Map<String, dynamic>>(),
-          checkIgnoredLines: checkIgnoredLines,
-          packagesPath: packagesPath,
-        ),
-        globalHitmap,
-      );
-    }
-  }
-  return globalHitmap;
-}
-
 /// Returns a JSON hit map backward-compatible with pre-1.16.0 SDKs.
-@Deprecated('Migrate to toScriptCoverageJsonV2')
+@Deprecated('Migrate to HitMap.toJson')
 Map<String, dynamic> toScriptCoverageJson(Uri scriptUri, Map<int, int> hitMap) {
-  return toScriptCoverageJsonV2(scriptUri, HitMap(hitMap));
+  return HitMap(hitMap).toJson(scriptUri);
 }
 
-/// Returns a JSON hit map backward-compatible with pre-1.16.0 SDKs.
-Map<String, dynamic> toScriptCoverageJsonV2(Uri scriptUri, HitMap hits) {
+Map<String, dynamic> _toScriptCoverageJsonV2(Uri scriptUri, HitMap hits) {
   final json = <String, dynamic>{};
   List<T> flattenMap<T>(Map map) {
     final kvs = <T>[];

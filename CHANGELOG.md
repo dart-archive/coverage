@@ -11,12 +11,12 @@
   coverage, in addition to line level.
 * Add an optional bool flag to `collect` that controls whether function coverage
   is collected.
-* Added `createHitmapV2`, `mergeHitmapsV2`, `parseCoverageV2`,
-  `toScriptCoverageJsonV2`, and `Formatter.formatV2` that switch from using
+* Added `HitMap.parseJson`, `FileHitMaps.merge`, `HitMap.parseFiles`,
+  `HitMap.toJson`, and `Formatter.formatV2` that switch from using
   `Map<int, int>` to represent line coverage to using `HitMap` (which contains
-  both line and function coverage). Document the old versions as deprecated. We
-  will depete the old functions and remove the "V2" from the new ones when we
-  update to coverage version 2.0.0.
+  both line and function coverage). Document the old versions of these functions
+  as deprecated. We will delete the old functions when we update to coverage
+  version 2.0.0.
 * Ensure `createHitmap` returns a sorted hitmap. This fixes a potential issue with
   ignore line annotations.
 * Use the `reportLines` flag in `vm_service`'s `getSourceReport` RPC. This

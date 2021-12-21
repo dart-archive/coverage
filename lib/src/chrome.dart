@@ -81,7 +81,7 @@ Future<Map<String, dynamic>> parseChromeCoverage(
 
   final allCoverage = <Map<String, dynamic>>[];
   coverageHitMaps.forEach((uri, hitMap) {
-    allCoverage.add(toScriptCoverageJsonV2(uri, hitMap));
+    allCoverage.add(hitMap.toJson(uri));
   });
   return <String, dynamic>{'type': 'CodeCoverage', 'coverage': allCoverage};
 }

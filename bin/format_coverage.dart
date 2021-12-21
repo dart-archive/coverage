@@ -58,9 +58,8 @@ Future<void> main(List<String> arguments) async {
   }
 
   final clock = Stopwatch()..start();
-  final hitmap = await parseCoverageV2(
+  final hitmap = await HitMap.parseFiles(
     files,
-    env.workers,
     checkIgnoredLines: env.checkIgnore,
     packagesPath: env.packagesPath,
   );

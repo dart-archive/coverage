@@ -164,36 +164,6 @@ class HitMap {
     }
     return globalHitmap;
   }
-
-  List<T> _flattenMap<T>(Map map) {
-    final kvs = <T>[];
-    map.forEach((k, v) {
-      kvs.add(k as T);
-      kvs.add(v as T);
-    });
-    return kvs;
-  }
-
-  /// Returns a JSON hit map backward-compatible with pre-1.16.0 SDKs.
-  Map<String, dynamic> toJson(Uri scriptUri) {
-    final json = <String, dynamic>{};
-    json['source'] = '$scriptUri';
-    json['script'] = {
-      'type': '@Script',
-      'fixedId': true,
-      'id': 'libraries/1/scripts/${Uri.encodeComponent(scriptUri.toString())}',
-      'uri': '$scriptUri',
-      '_kind': 'library',
-    };
-    json['hits'] = _flattenMap<int>(lineHits);
-    if (funcHits != null) {
-      json['funcHits'] = _flattenMap<int>(funcHits!);
-    }
-    if (funcNames != null) {
-      json['funcNames'] = _flattenMap<dynamic>(funcNames!);
-    }
-    return json;
-  }
 }
 
 extension FileHitMaps on Map<String, HitMap> {
@@ -298,9 +268,39 @@ Future<Map<String, Map<int, int>>> parseCoverage(
 }
 
 /// Returns a JSON hit map backward-compatible with pre-1.16.0 SDKs.
-@Deprecated('Migrate to HitMap.toJson')
+@Deprecated('Will be removed in 2.0.0')
 Map<String, dynamic> toScriptCoverageJson(Uri scriptUri, Map<int, int> hitMap) {
-  return HitMap(hitMap).toJson(scriptUri);
+  return hitmapToJson(HitMap(hitMap), scriptUri);
+}
+
+List<T> _flattenMap<T>(Map map) {
+  final kvs = <T>[];
+  map.forEach((k, v) {
+    kvs.add(k as T);
+    kvs.add(v as T);
+  });
+  return kvs;
+}
+
+/// Returns a JSON hit map backward-compatible with pre-1.16.0 SDKs.
+Map<String, dynamic> hitmapToJson(HitMap hitmap, Uri scriptUri) {
+  final json = <String, dynamic>{};
+  json['source'] = '$scriptUri';
+  json['script'] = {
+    'type': '@Script',
+    'fixedId': true,
+    'id': 'libraries/1/scripts/${Uri.encodeComponent(scriptUri.toString())}',
+    'uri': '$scriptUri',
+    '_kind': 'library',
+  };
+  json['hits'] = _flattenMap<int>(hitmap.lineHits);
+  if (hitmap.funcHits != null) {
+    json['funcHits'] = _flattenMap<int>(hitmap.funcHits!);
+  }
+  if (hitmap.funcNames != null) {
+    json['funcNames'] = _flattenMap<dynamic>(hitmap.funcNames!);
+  }
+  return json;
 }
 
 /// Sorts the hits array based on the line numbers.

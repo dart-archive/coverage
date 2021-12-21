@@ -12,10 +12,11 @@
 * Add an optional bool flag to `collect` that controls whether function coverage
   is collected.
 * Added `HitMap.parseJson`, `FileHitMaps.merge`, `HitMap.parseFiles`,
-  `HitMap.toJson`, and `Formatter.formatV2` that switch from using
-  `Map<int, int>` to represent line coverage to using `HitMap` (which contains
-  both line and function coverage). Document the old versions of these functions
-  as deprecated. We will delete the old functions when we update to coverage
+  `HitMap.toJson`, `FileHitMapsFormatter.formatLcov`, and
+  `FileHitMapsFormatter.prettyPrint` that switch from using `Map<int, int>` to
+  represent line coverage to using `HitMap` (which contains both line and
+  function coverage). Document the old versions of these functions as
+  deprecated. We will delete the old functions when we update to coverage
   version 2.0.0.
 * Ensure `createHitmap` returns a sorted hitmap. This fixes a potential issue with
   ignore line annotations.

@@ -25,7 +25,6 @@ class HitMap {
   /// function coverage info was not gathered.
   Map<int, String>? funcNames;
 
-
   /// Creates a single hitmap from a raw json object.
   ///
   /// Throws away all entries that are not resolvable.
@@ -156,18 +155,15 @@ class HitMap {
       final jsonMap = json.decode(contents) as Map<String, dynamic>;
       if (jsonMap.containsKey('coverage')) {
         final jsonResult = jsonMap['coverage'] as List;
-        globalHitmap.merge(
-          await HitMap.parseJson(
-            jsonResult.cast<Map<String, dynamic>>(),
-            checkIgnoredLines: checkIgnoredLines,
-            packagesPath: packagesPath,
-          )
-        );
+        globalHitmap.merge(await HitMap.parseJson(
+          jsonResult.cast<Map<String, dynamic>>(),
+          checkIgnoredLines: checkIgnoredLines,
+          packagesPath: packagesPath,
+        ));
       }
     }
     return globalHitmap;
   }
-
 
   List<T> _flattenMap<T>(Map map) {
     final kvs = <T>[];
@@ -305,35 +301,6 @@ Future<Map<String, Map<int, int>>> parseCoverage(
 @Deprecated('Migrate to HitMap.toJson')
 Map<String, dynamic> toScriptCoverageJson(Uri scriptUri, Map<int, int> hitMap) {
   return HitMap(hitMap).toJson(scriptUri);
-}
-
-Map<String, dynamic> _toScriptCoverageJsonV2(Uri scriptUri, HitMap hits) {
-  final json = <String, dynamic>{};
-  List<T> flattenMap<T>(Map map) {
-    final kvs = <T>[];
-    map.forEach((k, v) {
-      kvs.add(k as T);
-      kvs.add(v as T);
-    });
-    return kvs;
-  }
-
-  json['source'] = '$scriptUri';
-  json['script'] = {
-    'type': '@Script',
-    'fixedId': true,
-    'id': 'libraries/1/scripts/${Uri.encodeComponent(scriptUri.toString())}',
-    'uri': '$scriptUri',
-    '_kind': 'library',
-  };
-  json['hits'] = flattenMap<int>(hits.lineHits);
-  if (hits.funcHits != null) {
-    json['funcHits'] = flattenMap<int>(hits.funcHits!);
-  }
-  if (hits.funcNames != null) {
-    json['funcNames'] = flattenMap<dynamic>(hits.funcNames!);
-  }
-  return json;
 }
 
 /// Sorts the hits array based on the line numbers.

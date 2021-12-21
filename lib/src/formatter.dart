@@ -9,11 +9,8 @@ import 'hitmap.dart';
 
 abstract class Formatter {
   /// Returns the formatted coverage data.
-  @Deprecated('Migrate to formatV2')
+  @Deprecated('Migrate to FileHitMapsFormatter')
   Future<String> format(Map<String, Map<int, int>> hitmap);
-
-  /// Returns the formatted coverage data.
-  Future<String> formatV2(Map<String, HitMap> hitmap);
 }
 
 /// Converts the given hitmap to lcov format and appends the result to
@@ -33,56 +30,12 @@ class LcovFormatter implements Formatter {
   final String? basePath;
   final List<String>? reportOn;
 
-  @Deprecated('Migrate to formatV2')
+  @Deprecated('Migrate to FileHitMapsFormatter.formatLcov')
   @override
   Future<String> format(Map<String, Map<int, int>> hitmap) {
-    return formatV2(hitmap.map((key, value) => MapEntry(key, HitMap(value))));
-  }
-
-  @override
-  Future<String> formatV2(Map<String, HitMap> hitmap) async {
-    final pathFilter = _getPathFilter(reportOn);
-    final buf = StringBuffer();
-    for (var key in hitmap.keys) {
-      final v = hitmap[key]!;
-      final lineHits = v.lineHits;
-      final funcHits = v.funcHits;
-      final funcNames = v.funcNames;
-      var source = resolver.resolve(key);
-      if (source == null) {
-        continue;
-      }
-
-      if (!pathFilter(source)) {
-        continue;
-      }
-
-      if (basePath != null) {
-        source = p.relative(source, from: basePath);
-      }
-
-      buf.write('SF:$source\n');
-      if (funcHits != null && funcNames != null) {
-        for (var k in funcNames.keys.toList()..sort()) {
-          buf.write('FN:$k,${funcNames[k]}\n');
-        }
-        for (var k in funcHits.keys.toList()..sort()) {
-          if (funcHits[k]! != 0) {
-            buf.write('FNDA:${funcHits[k]},${funcNames[k]}\n');
-          }
-        }
-        buf.write('FNF:${funcNames.length}\n');
-        buf.write('FNH:${funcHits.values.where((v) => v > 0).length}\n');
-      }
-      for (var k in lineHits.keys.toList()..sort()) {
-        buf.write('DA:$k,${lineHits[k]}\n');
-      }
-      buf.write('LF:${lineHits.length}\n');
-      buf.write('LH:${lineHits.values.where((v) => v > 0).length}\n');
-      buf.write('end_of_record\n');
-    }
-
-    return buf.toString();
+    return Future.value(hitmap
+        .map((key, value) => MapEntry(key, HitMap(value)))
+        .formatLcov(resolver, basePath: basePath, reportOn: reportOn));
   }
 }
 
@@ -104,25 +57,91 @@ class PrettyPrintFormatter implements Formatter {
   final List<String>? reportOn;
   final bool reportFuncs;
 
-  @Deprecated('Migrate to formatV2')
+  @Deprecated('Migrate to FileHitMapsFormatter.prettyPrint')
   @override
   Future<String> format(Map<String, Map<int, int>> hitmap) {
-    return formatV2(hitmap.map((key, value) => MapEntry(key, HitMap(value))));
+    return hitmap.map((key, value) => MapEntry(key, HitMap(value))).prettyPrint(
+        resolver, loader,
+        reportOn: reportOn, reportFuncs: reportFuncs);
   }
+}
 
-  @override
-  Future<String> formatV2(Map<String, HitMap> hitmap) async {
+extension FileHitMapsFormatter on Map<String, HitMap> {
+  /// Converts the given hitmap to lcov format.
+  ///
+  /// If [reportOn] is provided, coverage report output is limited to files
+  /// prefixed with one of the paths included. If [basePath] is provided, paths
+  /// are reported relative to that path.
+  String formatLcov(
+    Resolver resolver, {
+    String? basePath,
+    List<String>? reportOn,
+  }) {
     final pathFilter = _getPathFilter(reportOn);
     final buf = StringBuffer();
-    for (var key in hitmap.keys) {
-      final v = hitmap[key]!;
+    for (final entry in entries) {
+      final v = entry.value;
+      final lineHits = v.lineHits;
+      final funcHits = v.funcHits;
+      final funcNames = v.funcNames;
+      var source = resolver.resolve(entry.key);
+      if (source == null) {
+        continue;
+      }
+
+      if (!pathFilter(source)) {
+        continue;
+      }
+
+      if (basePath != null) {
+        source = p.relative(source, from: basePath);
+      }
+
+      buf.write('SF:$source\n');
+      if (funcHits != null && funcNames != null) {
+        for (final k in funcNames.keys.toList()..sort()) {
+          buf.write('FN:$k,${funcNames[k]}\n');
+        }
+        for (final k in funcHits.keys.toList()..sort()) {
+          if (funcHits[k]! != 0) {
+            buf.write('FNDA:${funcHits[k]},${funcNames[k]}\n');
+          }
+        }
+        buf.write('FNF:${funcNames.length}\n');
+        buf.write('FNH:${funcHits.values.where((v) => v > 0).length}\n');
+      }
+      for (final k in lineHits.keys.toList()..sort()) {
+        buf.write('DA:$k,${lineHits[k]}\n');
+      }
+      buf.write('LF:${lineHits.length}\n');
+      buf.write('LH:${lineHits.values.where((v) => v > 0).length}\n');
+      buf.write('end_of_record\n');
+    }
+
+    return buf.toString();
+  }
+
+  /// Converts the given hitmap to a pretty-print format.
+  ///
+  /// If [reportOn] is provided, coverage report output is limited to files
+  /// prefixed with one of the paths included.
+  Future<String> prettyPrint(
+    Resolver resolver,
+    Loader loader, {
+    List<String>? reportOn,
+    bool reportFuncs = false,
+  }) async {
+    final pathFilter = _getPathFilter(reportOn);
+    final buf = StringBuffer();
+    for (final entry in entries) {
+      final v = entry.value;
       if (reportFuncs && v.funcHits == null) {
         throw 'Function coverage formatting was requested, but the hit map is '
             'missing function coverage information. Did you run '
             'collect_coverage with the --function-coverage flag?';
       }
       final hits = reportFuncs ? v.funcHits! : v.lineHits;
-      final source = resolver.resolve(key);
+      final source = resolver.resolve(entry.key);
       if (source == null) {
         continue;
       }

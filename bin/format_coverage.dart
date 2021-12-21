@@ -75,14 +75,12 @@ Future<void> main(List<String> arguments) async {
       : Resolver(packagesPath: env.packagesPath, sdkRoot: env.sdkRoot);
   final loader = Loader();
   if (env.prettyPrint || env.prettyPrintFunc) {
-    output = await PrettyPrintFormatter(resolver, loader,
-            reportOn: env.reportOn, reportFuncs: env.prettyPrintFunc)
-        .formatV2(hitmap);
+    output = await hitmap.prettyPrint(resolver, loader,
+        reportOn: env.reportOn, reportFuncs: env.prettyPrintFunc);
   } else {
     assert(env.lcov);
-    output = await LcovFormatter(resolver,
-            reportOn: env.reportOn, basePath: env.baseDirectory)
-        .formatV2(hitmap);
+    output = hitmap.formatLcov(resolver,
+        reportOn: env.reportOn, basePath: env.baseDirectory);
   }
 
   env.output.write(output);

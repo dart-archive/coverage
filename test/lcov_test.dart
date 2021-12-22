@@ -49,10 +49,10 @@ void main() {
       final hitmap = await _getHitMap();
 
       final resolver = Resolver(packagesPath: '.packages');
+      // ignore: deprecated_member_use_from_same_package
       final formatter = LcovFormatter(resolver);
 
       final res = await formatter
-          // ignore: deprecated_member_use_from_same_package
           .format(hitmap.map((key, value) => MapEntry(key, value.lineHits)));
 
       expect(res, contains(p.absolute(_sampleAppPath)));
@@ -110,10 +110,10 @@ void main() {
       final hitmap = await _getHitMap();
 
       final resolver = Resolver(packagesPath: '.packages');
+      // ignore: deprecated_member_use_from_same_package
       final formatter = PrettyPrintFormatter(resolver, Loader());
 
       final res = await formatter
-          // ignore: deprecated_member_use_from_same_package
           .format(hitmap.map((key, value) => MapEntry(key, value.lineHits)));
 
       expect(res, contains(p.absolute(_sampleAppPath)));

@@ -7,9 +7,9 @@ import 'package:path/path.dart' as p;
 import 'resolver.dart';
 import 'hitmap.dart';
 
+@Deprecated('Migrate to FileHitMapsFormatter')
 abstract class Formatter {
   /// Returns the formatted coverage data.
-  @Deprecated('Migrate to FileHitMapsFormatter')
   Future<String> format(Map<String, Map<int, int>> hitmap);
 }
 
@@ -18,6 +18,7 @@ abstract class Formatter {
 ///
 /// Returns a [Future] that completes as soon as all map entries have been
 /// emitted.
+@Deprecated('Migrate to FileHitMapsFormatter.formatLcov')
 class LcovFormatter implements Formatter {
   /// Creates a LCOV formatter.
   ///
@@ -30,7 +31,6 @@ class LcovFormatter implements Formatter {
   final String? basePath;
   final List<String>? reportOn;
 
-  @Deprecated('Migrate to FileHitMapsFormatter.formatLcov')
   @override
   Future<String> format(Map<String, Map<int, int>> hitmap) {
     return Future.value(hitmap
@@ -44,6 +44,7 @@ class LcovFormatter implements Formatter {
 ///
 /// Returns a [Future] that completes as soon as all map entries have been
 /// emitted.
+@Deprecated('Migrate to FileHitMapsFormatter.prettyPrint')
 class PrettyPrintFormatter implements Formatter {
   /// Creates a pretty-print formatter.
   ///
@@ -57,7 +58,6 @@ class PrettyPrintFormatter implements Formatter {
   final List<String>? reportOn;
   final bool reportFuncs;
 
-  @Deprecated('Migrate to FileHitMapsFormatter.prettyPrint')
   @override
   Future<String> format(Map<String, Map<int, int>> hitmap) {
     return hitmap.map((key, value) => MapEntry(key, HitMap(value))).prettyPrint(

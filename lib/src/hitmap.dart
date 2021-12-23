@@ -234,7 +234,7 @@ Future<Map<String, Map<int, int>>> createHitmap(
 }
 
 /// Merges [newMap] into [result].
-@Deprecated('Migrate to HitMap.mergeWith')
+@Deprecated('Migrate to FileHitMaps.merge')
 void mergeHitmaps(
     Map<String, Map<int, int>> newMap, Map<String, Map<int, int>> result) {
   newMap.forEach((file, v) {

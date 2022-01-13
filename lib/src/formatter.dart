@@ -130,6 +130,7 @@ extension FileHitMapsFormatter on Map<String, HitMap> {
     Loader loader, {
     List<String>? reportOn,
     bool reportFuncs = false,
+    bool reportBranches = false,
   }) async {
     final pathFilter = _getPathFilter(reportOn);
     final buf = StringBuffer();
@@ -140,7 +141,12 @@ extension FileHitMapsFormatter on Map<String, HitMap> {
             'missing function coverage information. Did you run '
             'collect_coverage with the --function-coverage flag?';
       }
-      final hits = reportFuncs ? v.funcHits! : v.lineHits;
+      if (reportBranches && v.branchHits == null) {
+        throw 'Branch coverage formatting was requested, but the hit map is '
+            'missing branch coverage information. Did you run '
+            'collect_coverage with the --branch-coverage flag?';
+      }
+      final hits = reportFuncs ? v.funcHits! : reportBranches ? v.branchHits! : v.lineHits;
       final source = resolver.resolve(entry.key);
       if (source == null) {
         continue;

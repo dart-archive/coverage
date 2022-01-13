@@ -13,8 +13,7 @@ dependencies:
   path: ^1.8.0
   source_maps: ^0.10.10
   stack_trace: ^1.10.0
-  vm_service:
-    path: /usr/local/google/home/liama/dart-sdk/sdk/pkg/vm_service
+  vm_service: ^8.2.0
 dev_dependencies:
   lints: ^1.0.0
   test: ^1.16.0

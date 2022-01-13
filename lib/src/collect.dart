@@ -140,7 +140,7 @@ Future<Map<String, dynamic>> _getAllCoverage(
         // Skip scripts which should not be included in the report.
         if (!scopedOutput.contains(scope)) continue;
         final scriptReport = await service.getSourceReport(
-            isolateRef.id!, <String>[SourceReportKind.kCoverage],
+            isolateRef.id!, sourceReportKinds,
             forceCompile: true,
             scriptId: script.id,
             reportLines: reportLines ? true : null);
@@ -151,7 +151,7 @@ Future<Map<String, dynamic>> _getAllCoverage(
     } else {
       final isolateReport = await service.getSourceReport(
         isolateRef.id!,
-        <String>[SourceReportKind.kCoverage],
+        sourceReportKinds,
         forceCompile: true,
         reportLines: reportLines ? true : null,
       );

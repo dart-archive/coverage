@@ -84,6 +84,7 @@ extension FileHitMapsFormatter on Map<String, HitMap> {
       final lineHits = v.lineHits;
       final funcHits = v.funcHits;
       final funcNames = v.funcNames;
+      final branchHits = v.branchHits;
       var source = resolver.resolve(entry.key);
       if (source == null) {
         continue;
@@ -115,6 +116,11 @@ extension FileHitMapsFormatter on Map<String, HitMap> {
       }
       buf.write('LF:${lineHits.length}\n');
       buf.write('LH:${lineHits.values.where((v) => v > 0).length}\n');
+      if (branchHits != null) {
+        for (final k in branchHits.keys.toList()..sort()) {
+          buf.write('BRDA:$k,0,0,${branchHits[k]}\n');
+        }
+      }
       buf.write('end_of_record\n');
     }
 
@@ -146,7 +152,11 @@ extension FileHitMapsFormatter on Map<String, HitMap> {
             'missing branch coverage information. Did you run '
             'collect_coverage with the --branch-coverage flag?';
       }
-      final hits = reportFuncs ? v.funcHits! : reportBranches ? v.branchHits! : v.lineHits;
+      final hits = reportFuncs
+          ? v.funcHits!
+          : reportBranches
+              ? v.branchHits!
+              : v.lineHits;
       final source = resolver.resolve(entry.key);
       if (source == null) {
         continue;

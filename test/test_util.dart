@@ -12,9 +12,10 @@ final String testAppPath = p.join('test', 'test_files', 'test_app.dart');
 const Duration timeout = Duration(seconds: 20);
 
 Future<Process> runTestApp(int openPort) async {
-  return Process.start('dart', [
+  return Process.start(Platform.resolvedExecutable, [
     '--enable-vm-service=$openPort',
     '--pause_isolates_on_exit',
+    '--branch-coverage',
     testAppPath
   ]);
 }

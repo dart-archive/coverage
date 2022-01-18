@@ -113,7 +113,7 @@ void main() {
   });
 
   test('HitMap.parseJson', () async {
-    final resultString = await _collectCoverage(true);
+    final resultString = await _collectCoverage(true, true);
     final jsonResult = json.decode(resultString) as Map<String, dynamic>;
     final coverage = jsonResult['coverage'] as List;
     final hitMap = await HitMap.parseJson(
@@ -179,6 +179,8 @@ void main() {
       28: 'fooAsync',
       38: 'isolateTask'
     });
+    expect(isolateFile?.branchHits,
+        {11: 1, 12: 1, 15: 0, 19: 1, 23: 1, 28: 1, 32: 0, 38: 1, 42: 1});
   });
 
   test('parseCoverage', () async {
@@ -289,9 +291,10 @@ void main() {
 String? _coverageData;
 
 Future<String> _getCoverageResult() async =>
-    _coverageData ??= await _collectCoverage(false);
+    _coverageData ??= await _collectCoverage(false, false);
 
-Future<String> _collectCoverage(bool functionCoverage) async {
+Future<String> _collectCoverage(
+    bool functionCoverage, bool branchCoverage) async {
   expect(FileSystemEntity.isFileSync(testAppPath), isTrue);
 
   final openPort = await getOpenPort();
@@ -316,9 +319,10 @@ Future<String> _collectCoverage(bool functionCoverage) async {
 
   // Run the collection tool.
   // TODO: need to get all of this functionality in the lib
-  final toolResult = await Process.run('dart', [
+  final toolResult = await Process.run(Platform.resolvedExecutable, [
     _collectAppPath,
     if (functionCoverage) '--function-coverage',
+    if (branchCoverage) '--branch-coverage',
     '--uri',
     '$serviceUri',
     '--resume-isolates',

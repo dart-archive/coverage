@@ -78,7 +78,9 @@ Future<void> main(List<String> arguments) async {
   final loader = Loader();
   if (env.prettyPrint) {
     output = await hitmap.prettyPrint(resolver, loader,
-        reportOn: env.reportOn, reportFuncs: env.prettyPrintFunc, reportBranches: env.prettyPrintBranch);
+        reportOn: env.reportOn,
+        reportFuncs: env.prettyPrintFunc,
+        reportBranches: env.prettyPrintBranch);
   } else {
     assert(env.lcov);
     output = hitmap.formatLcov(resolver,
@@ -223,7 +225,10 @@ Environment parseArgs(List<String> arguments) {
   var prettyPrint = args['pretty-print'] as bool;
   final prettyPrintFunc = args['pretty-print-func'] as bool;
   final prettyPrintBranch = args['pretty-print-branch'] as bool;
-  final numModesChosen = (prettyPrint ? 1 : 0) + (prettyPrintFunc ? 1 : 0) + (prettyPrintBranch ? 1 : 0) + (lcov ? 1 : 0);
+  final numModesChosen = (prettyPrint ? 1 : 0) +
+      (prettyPrintFunc ? 1 : 0) +
+      (prettyPrintBranch ? 1 : 0) +
+      (lcov ? 1 : 0);
   if (numModesChosen > 1) {
     fail('Choose one of the pretty-print modes or lcov output');
   }

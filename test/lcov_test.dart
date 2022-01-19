@@ -18,7 +18,7 @@ final _sampleAppFileUri = p.toUri(p.absolute(_sampleAppPath)).toString();
 final _isolateLibFileUri = p.toUri(p.absolute(_isolateLibPath)).toString();
 
 void main() {
-  /*test('validate hitMap', () async {
+  test('validate hitMap', () async {
     final hitmap = await _getHitMap();
 
     expect(hitmap, contains(_sampleAppFileUri));
@@ -29,6 +29,7 @@ void main() {
     final sampleAppHitLines = sampleAppHitMap?.lineHits;
     final sampleAppHitFuncs = sampleAppHitMap?.funcHits;
     final sampleAppFuncNames = sampleAppHitMap?.funcNames;
+    final sampleAppBranchHits = sampleAppHitMap?.branchHits;
 
     expect(sampleAppHitLines, containsPair(46, greaterThanOrEqualTo(1)),
         reason: 'be careful if you modify the test file');
@@ -42,9 +43,11 @@ void main() {
         reason: 'be careful if you modify the test file');
     expect(sampleAppFuncNames, containsPair(45, 'usedMethod'),
         reason: 'be careful if you modify the test file');
-  });*/
+    expect(sampleAppBranchHits, containsPair(41, 1),
+        reason: 'be careful if you modify the test file');
+  });
 
-  /*group('LcovFormatter', () {
+  group('LcovFormatter', () {
     test('format()', () async {
       final hitmap = await _getHitMap();
 
@@ -103,10 +106,10 @@ void main() {
           res, isNot(contains(p.absolute(p.join('lib', 'src', 'util.dart')))));
       expect(res, contains(p.join('src', 'util.dart')));
     });
-  });*/
+  });
 
   group('PrettyPrintFormatter', () {
-    /*test('format()', () async {
+    test('format()', () async {
       final hitmap = await _getHitMap();
 
       final resolver = Resolver(packagesPath: '.packages');
@@ -196,11 +199,10 @@ void main() {
       expect(res, contains('      1|int usedMethod(int a, int b) {'));
       expect(res, contains('      0|int unusedMethod(int a, int b) {'));
       expect(res, contains('       |  return a + b;'));
-    });*/
+    });
 
     test('prettyPrint() branches', () async {
       final hitmap = await _getHitMap();
-      print('HHHHHHH   ${hitmap}');
 
       final resolver = Resolver(packagesPath: '.packages');
       final res =
@@ -211,10 +213,9 @@ void main() {
       expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
 
       // be very careful if you change the test file
-      expect(res, contains('      1|  for (var i = 0; i < 10; i++) {'));
-      expect(res, contains('      1|      if (sum != (i + j)) {'));
-      expect(res, contains('      0|  if (value != 3) {'));
-      expect(res, contains('       |  print(result);'));
+      expect(res, contains('      1|  if (x == answer) {'));
+      expect(res, contains('      0|  while (i < lines.length) {'));
+      expect(res, contains('       |  bar.baz();'));
     });
   });
 }
@@ -254,7 +255,6 @@ Future<Map<String, HitMap>> _getHitMap() async {
   final coverageJson = (await collect(serviceUri, true, true, false, <String>{},
       functionCoverage: true,
       branchCoverage: true))['coverage'] as List<Map<String, dynamic>>;
-  print("SDLKGJSLDKFJGSD: $coverageJson");
   final hitMap = HitMap.parseJson(coverageJson);
 
   // wait for sample app to terminate.

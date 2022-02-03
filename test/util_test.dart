@@ -113,8 +113,8 @@ void main() {
 
     test('returns URI with auth token at end of string', () {
       const msg = 'Observatory listening on http://foo.bar:9999/cG90YXRv/';
-      expect(extractVMServiceUri(msg),
-          Uri.parse('http://foo.bar:9999/cG90YXRv/'));
+      expect(
+          extractVMServiceUri(msg), Uri.parse('http://foo.bar:9999/cG90YXRv/'));
     });
 
     test('return URI embedded within string', () {
@@ -125,14 +125,14 @@ void main() {
     test('return URI with auth token embedded within string', () {
       const msg =
           '1985-10-26 Observatory listening on http://foo.bar:9999/cG90YXRv/ **';
-      expect(extractVMServiceUri(msg),
-          Uri.parse('http://foo.bar:9999/cG90YXRv/'));
+      expect(
+          extractVMServiceUri(msg), Uri.parse('http://foo.bar:9999/cG90YXRv/'));
     });
 
     test('handles new Dart VM service message format', () {
       const msg = 'Dart VM Service listening on http://foo.bar:9999/cG90YXRv/';
-      expect(extractVMServiceUri(msg),
-          Uri.parse('http://foo.bar:9999/cG90YXRv/'));
+      expect(
+          extractVMServiceUri(msg), Uri.parse('http://foo.bar:9999/cG90YXRv/'));
     });
   });
 

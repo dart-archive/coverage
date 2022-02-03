@@ -50,7 +50,7 @@ Uri? extractObservatoryUri(String str) => extractVMServiceUri(str);
 /// Potentially useful as a means to extract it from log statements.
 Uri? extractVMServiceUri(String str) {
   final listeningMessageRegExp = RegExp(
-      r'(?:Observatory|Dart VM Service) listening on ((http|//)[a-zA-Z0-9:/=_\-\.\[\]]+)',
+    r'(?:Observatory|Dart VM Service) listening on ((http|//)[a-zA-Z0-9:/=_\-\.\[\]]+)',
   );
   final match = listeningMessageRegExp.firstMatch(str);
   if (match != null) {

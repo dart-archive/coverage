@@ -38,12 +38,6 @@ Future<dynamic> retry(Future Function() f, Duration interval,
   }, duration: timeout);
 }
 
-/// Scrapes and returns the observatory URI from a string, or null if not found.
-///
-/// Potentially useful as a means to extract it from log statements.
-@Deprecated('Use extractVMServiceUri instead')
-Uri? extractObservatoryUri(String str) => extractVMServiceUri(str);
-
 /// Scrapes and returns the Dart VM service URI from a string, or null if not
 /// found.
 ///

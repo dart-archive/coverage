@@ -309,7 +309,7 @@ Future<String> _collectCoverage(
       .transform(LineSplitter())
       .listen((line) {
     if (!serviceUriCompleter.isCompleted) {
-      final serviceUri = extractObservatoryUri(line);
+      final serviceUri = extractVMServiceUri(line);
       if (serviceUri != null) {
         serviceUriCompleter.complete(serviceUri);
       }

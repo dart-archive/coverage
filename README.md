@@ -8,13 +8,13 @@ Dart.
 
 Tools
 -----
-`collect_coverage` collects coverage JSON from the Dart VM Observatory.
+`collect_coverage` collects coverage JSON from the Dart VM Service.
 `format_coverage` formats JSON coverage data into either
 [LCOV](http://ltp.sourceforge.net/coverage/lcov.php) or pretty-printed format.
 
 #### Install coverage
 
-    pub global activate coverage
+    dart pub global activate coverage
 
 Consider adding the `pub global run` executables directory to your path.
 See [Running a script from your PATH](https://dart.dev/tools/pub/cmd/pub-global#running-a-script-from-your-path)
@@ -33,7 +33,7 @@ or if the `pub global run` executables are on your PATH,
 collect_coverage --uri=http://... -o coverage.json --resume-isolates
 ```
 
-where `--uri` specifies the Observatory URI emitted by the VM.
+where `--uri` specifies the Dart VM Service URI emitted by the VM.
 
 If `collect_coverage` is invoked before the script from which coverage is to be
 collected, it will wait until it detects a VM observatory to which it can

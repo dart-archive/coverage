@@ -13,6 +13,7 @@
 * Add an optional bool flag to `collect` that controls whether branch coverage
   is collected.
 * Add a `branchHits` field to `HitMap`.
+* Add support for scraping the service URI from the new Dart VM service message.
 
 ## 1.1.0 - 2022-1-18
 

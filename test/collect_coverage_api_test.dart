@@ -114,12 +114,15 @@ void main() {
       return map;
     });
 
-    for (var sampleCoverageData in sources[_sampleAppFileUri]!) {
-      expect(sampleCoverageData['branchHits'], isNotEmpty);
-    }
+    if (platformVersionCheck(2, 17)) {
+      // Dart VM versions before 2.17 don't support branch coverage.
+      for (var sampleCoverageData in sources[_sampleAppFileUri]!) {
+        expect(sampleCoverageData['branchHits'], isNotEmpty);
+      }
 
-    for (var sampleCoverageData in sources[_isolateLibFileUri]!) {
-      expect(sampleCoverageData['branchHits'], isNotEmpty);
+      for (var sampleCoverageData in sources[_isolateLibFileUri]!) {
+        expect(sampleCoverageData['branchHits'], isNotEmpty);
+      }
     }
   });
 }

@@ -19,3 +19,13 @@ Future<Process> runTestApp(int openPort) async {
     testAppPath
   ]);
 }
+
+final _versionPattern = RegExp('([0-9]+)\\.([0-9]+)\\.([0-9]+)');
+bool platformVersionCheck(int minMajor, int minMinor) {
+  final match = _versionPattern.matchAsPrefix(Platform.version);
+  if (match == null) return false;
+  if (match.groupCount < 3) return false;
+  final major = int.parse(match.group(1)!);
+  final minor = int.parse(match.group(2)!);
+  return major > minMajor || (major == minMajor && minor >= minMinor);
+}

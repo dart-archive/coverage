@@ -93,6 +93,12 @@ Future<Map<String, dynamic>> collect(Uri serviceUri, bool resume,
   }
 }
 
+bool _versionCheck(Version version, int minMajor, int minMinor) {
+  final major = version.major ?? 0;
+  final minor = version.minor ?? 0;
+  return major > minMajor || (major == minMajor && minor >= minMinor);
+}
+
 Future<Map<String, dynamic>> _getAllCoverage(
     VmService service,
     bool includeDart,
@@ -104,9 +110,13 @@ Future<Map<String, dynamic>> _getAllCoverage(
   final vm = await service.getVM();
   final allCoverage = <Map<String, dynamic>>[];
   final version = await service.getVersion();
-  final reportLines =
-      (version.major == 3 && version.minor != null && version.minor! >= 51) ||
-          (version.major != null && version.major! > 3);
+  final reportLines = _versionCheck(version, 3, 51);
+  final branchCoverageSupported = _versionCheck(version, 3, 56);
+  if (branchCoverage && !branchCoverageSupported) {
+    branchCoverage = false;
+    stderr.write('Branch coverage was requested, but is not supported'
+        ' by the VM version. Try updating to a newer version of Dart');
+  }
   final sourceReportKinds = [
     SourceReportKind.kCoverage,
     if (branchCoverage) SourceReportKind.kBranchCoverage,
@@ -241,7 +251,8 @@ Future<void> _processFunction(VmService service, IsolateRef isolateRef,
     final line = _getLineFromTokenPos(script, tokenPos);
 
     if (line == null) {
-      print('tokenPos $tokenPos has no line mapping for script ${script.uri!}');
+      stderr.write(
+          'tokenPos $tokenPos has no line mapping for script ${script.uri!}');
       return;
     }
     hits.funcNames![line] = funcName;
@@ -320,7 +331,8 @@ Future<List<Map<String, dynamic>>> _getCoverageJson(
       for (final pos in tokenPositions) {
         final line = reportLines ? pos : _getLineFromTokenPos(script!, pos);
         if (line == null) {
-          print('tokenPos $pos has no line mapping for script $scriptUri');
+          stderr
+              .write('tokenPos $pos has no line mapping for script $scriptUri');
           continue;
         }
         body(line);

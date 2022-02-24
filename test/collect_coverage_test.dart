@@ -179,8 +179,11 @@ void main() {
       28: 'fooAsync',
       38: 'isolateTask'
     });
-    expect(isolateFile?.branchHits,
-        {11: 1, 12: 1, 15: 0, 19: 1, 23: 1, 28: 1, 32: 0, 38: 1, 42: 1});
+    if (platformVersionCheck(2, 17)) {
+      // Dart VM versions before 2.17 don't support branch coverage.
+      expect(isolateFile?.branchHits,
+          {11: 1, 12: 1, 15: 0, 19: 1, 23: 1, 28: 1, 32: 0, 38: 1, 42: 1});
+    }
   });
 
   test('parseCoverage', () async {

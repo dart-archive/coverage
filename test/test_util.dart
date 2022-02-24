@@ -15,7 +15,8 @@ Future<Process> runTestApp(int openPort) async {
   return Process.start(Platform.resolvedExecutable, [
     '--enable-vm-service=$openPort',
     '--pause_isolates_on_exit',
-    '--branch-coverage',
+    // Dart VM versions before 2.17 don't support branch coverage.
+    if (platformVersionCheck(2, 17)) '--branch-coverage',
     testAppPath
   ]);
 }

@@ -238,7 +238,8 @@ Future<Map<String, HitMap>> _getHitMap() async {
   final sampleAppArgs = [
     '--pause-isolates-on-exit',
     '--enable-vm-service=$port',
-    '--branch-coverage',
+    // Dart VM versions before 2.17 don't support branch coverage.
+    if (platformVersionCheck(2, 17)) '--branch-coverage',
     _sampleAppPath
   ];
   final sampleProcess =

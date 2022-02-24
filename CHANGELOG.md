@@ -10,8 +10,8 @@
   line level.
 * Update `--lcov` (abbr `-l`) in format_coverage to output branch level
   coverage, in addition to line level.
-* Add an optional bool flag to `collect` that controls whether branch coverage
-  is collected.
+* Add an optional bool flag to `collect` and `runAndCollect` that controls
+  whether branch coverage is collected.
 * Add a `branchHits` field to `HitMap`.
 * Add support for scraping the service URI from the new Dart VM service message.
 

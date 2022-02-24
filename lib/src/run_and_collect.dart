@@ -13,21 +13,16 @@ Future<Map<String, dynamic>> runAndCollect(String scriptPath,
     {List<String>? scriptArgs,
     bool checked = false,
     bool includeDart = false,
+    bool branchCoverage = false,
     Duration? timeout}) async {
   final dartArgs = [
     '--enable-vm-service',
     '--pause_isolates_on_exit',
+    if (branchCoverage) '--branch-coverage',
+    if (checked) '--checked',
+    scriptPath,
+    if (scriptArgs != null) ...scriptArgs,
   ];
-
-  if (checked) {
-    dartArgs.add('--checked');
-  }
-
-  dartArgs.add(scriptPath);
-
-  if (scriptArgs != null) {
-    dartArgs.addAll(scriptArgs);
-  }
 
   final process = await Process.start('dart', dartArgs);
   final serviceUriCompleter = Completer<Uri>();
@@ -44,7 +39,8 @@ Future<Map<String, dynamic>> runAndCollect(String scriptPath,
   final serviceUri = await serviceUriCompleter.future;
   Map<String, dynamic> coverage;
   try {
-    coverage = await collect(serviceUri, true, true, includeDart, <String>{},
+    coverage = await collect(
+        serviceUri, true, branchCoverage, includeDart, <String>{},
         timeout: timeout);
   } finally {
     await process.stderr.drain();

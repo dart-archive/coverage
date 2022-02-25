@@ -45,12 +45,35 @@ void main() {
         reason: 'be careful if you modify the test file');
     expect(sampleAppFuncNames, containsPair(45, 'usedMethod'),
         reason: 'be careful if you modify the test file');
-    if (platformVersionCheck(2, 17)) {
-      // Dart VM versions before 2.17 don't support branch coverage.
-      expect(sampleAppBranchHits, containsPair(41, 1),
-          reason: 'be careful if you modify the test file');
-    }
-  });
+    expect(sampleAppBranchHits, containsPair(41, 1),
+        reason: 'be careful if you modify the test file');
+  }, skip: !platformVersionCheck(2, 17));
+
+  test('validate hitMap, old VM without branch coverage', () async {
+    final hitmap = await _getHitMap();
+
+    expect(hitmap, contains(_sampleAppFileUri));
+    expect(hitmap, contains(_isolateLibFileUri));
+    expect(hitmap, contains('package:coverage/src/util.dart'));
+
+    final sampleAppHitMap = hitmap[_sampleAppFileUri];
+    final sampleAppHitLines = sampleAppHitMap?.lineHits;
+    final sampleAppHitFuncs = sampleAppHitMap?.funcHits;
+    final sampleAppFuncNames = sampleAppHitMap?.funcNames;
+
+    expect(sampleAppHitLines, containsPair(46, greaterThanOrEqualTo(1)),
+        reason: 'be careful if you modify the test file');
+    expect(sampleAppHitLines, containsPair(50, 0),
+        reason: 'be careful if you modify the test file');
+    expect(sampleAppHitLines, isNot(contains(32)),
+        reason: 'be careful if you modify the test file');
+    expect(sampleAppHitFuncs, containsPair(45, 1),
+        reason: 'be careful if you modify the test file');
+    expect(sampleAppHitFuncs, containsPair(49, 0),
+        reason: 'be careful if you modify the test file');
+    expect(sampleAppFuncNames, containsPair(45, 'usedMethod'),
+        reason: 'be careful if you modify the test file');
+  }, skip: platformVersionCheck(2, 17));
 
   group('LcovFormatter', () {
     test('format()', () async {
@@ -206,25 +229,22 @@ void main() {
       expect(res, contains('       |  return a + b;'));
     });
 
-    if (platformVersionCheck(2, 17)) {
-      // Dart VM versions before 2.17 don't support branch coverage.
-      test('prettyPrint() branches', () async {
-        final hitmap = await _getHitMap();
+    test('prettyPrint() branches', () async {
+      final hitmap = await _getHitMap();
 
-        final resolver = Resolver(packagesPath: '.packages');
-        final res =
-            await hitmap.prettyPrint(resolver, Loader(), reportBranches: true);
+      final resolver = Resolver(packagesPath: '.packages');
+      final res =
+          await hitmap.prettyPrint(resolver, Loader(), reportBranches: true);
 
-        expect(res, contains(p.absolute(_sampleAppPath)));
-        expect(res, contains(p.absolute(_isolateLibPath)));
-        expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
+      expect(res, contains(p.absolute(_sampleAppPath)));
+      expect(res, contains(p.absolute(_isolateLibPath)));
+      expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
 
-        // be very careful if you change the test file
-        expect(res, contains('      1|  if (x == answer) {'));
-        expect(res, contains('      0|  while (i < lines.length) {'));
-        expect(res, contains('       |  bar.baz();'));
-      });
-    }
+      // be very careful if you change the test file
+      expect(res, contains('      1|  if (x == answer) {'));
+      expect(res, contains('      0|  while (i < lines.length) {'));
+      expect(res, contains('       |  bar.baz();'));
+    }, skip: !platformVersionCheck(2, 17));
   });
 }
 

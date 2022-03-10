@@ -18,7 +18,7 @@ class Resolver {
       : _packages = packages;
 
   static Future<Resolver> create({
-    @Deprecated('Use packagePath') String? packagesPath,
+    String? packagesPath,
     String? packagePath,
     String? sdkRoot,
   }) async {

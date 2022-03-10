@@ -60,7 +60,7 @@ foo:file:///${d.sandbox}/foo/lib
 
     test('errors if the packagesFile is an unknown format', () async {
       expect(
-          () => await Resolver.create(
+          () async => await Resolver.create(
               packagesPath: p.join(d.sandbox, 'foo', '.bad.packages')),
           throwsA(isA<FormatException>()));
     });

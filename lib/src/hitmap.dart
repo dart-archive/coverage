@@ -173,6 +173,7 @@ class HitMap {
         globalHitmap.merge(await HitMap.parseJson(
           jsonResult.cast<Map<String, dynamic>>(),
           checkIgnoredLines: checkIgnoredLines,
+          // ignore: deprecated_member_use_from_same_package
           packagesPath: packagesPath,
           packagePath: packagePath,
         ));

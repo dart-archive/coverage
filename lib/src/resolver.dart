@@ -10,10 +10,30 @@ import 'package:path/path.dart' as p;
 
 /// [Resolver] resolves imports with respect to a given environment.
 class Resolver {
-  Resolver({this.packagesPath, this.sdkRoot})
-      : _packages = packagesPath != null ? _parsePackages(packagesPath) : null;
+  Resolver(
+      {this.packagesPath,
+      this.packagePath,
+      this.sdkRoot,
+      Map<String, Uri>? packages})
+      : _packages = packages;
+
+  static Future<Resolver> create({
+    @Deprecated('Use packagePath') String? packagesPath,
+    String? packagePath,
+    String? sdkRoot,
+  }) async {
+    return Resolver(
+      packagesPath: packagesPath,
+      packagePath: packagePath,
+      sdkRoot: sdkRoot,
+      packages: packagesPath != null
+          ? _parsePackages(packagesPath)
+          : (packagePath != null ? await _parsePackage(packagePath) : null),
+    );
+  }
 
   final String? packagesPath;
+  final String? packagePath;
   final String? sdkRoot;
   final List<String> failed = [];
   final Map<String, Uri>? _packages;
@@ -111,6 +131,14 @@ class Resolver {
       }
       return packageMap;
     }
+  }
+
+  static Future<Map<String, Uri>?> _parsePackage(String packagePath) async {
+    final parsed = await findPackageConfig(Directory(packagePath));
+    if (parsed == null) return null;
+    return {
+      for (var package in parsed.packages) package.name: package.packageUriRoot
+    };
   }
 }
 

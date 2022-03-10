@@ -39,9 +39,11 @@ class HitMap {
   static Future<Map<String, HitMap>> parseJson(
     List<Map<String, dynamic>> jsonResult, {
     bool checkIgnoredLines = false,
-    String? packagesPath,
+    @Deprecated('Use packagePath') String? packagesPath,
+    String? packagePath,
   }) async {
-    final resolver = Resolver(packagesPath: packagesPath);
+    final resolver = await Resolver.create(
+        packagesPath: packagesPath, packagePath: packagePath);
     final loader = Loader();
 
     // Map of source file to map of line to hit count for that line.
@@ -159,7 +161,8 @@ class HitMap {
   static Future<Map<String, HitMap>> parseFiles(
     Iterable<File> files, {
     bool checkIgnoredLines = false,
-    String? packagesPath,
+    @Deprecated('Use packagePath') String? packagesPath,
+    String? packagePath,
   }) async {
     final globalHitmap = <String, HitMap>{};
     for (var file in files) {
@@ -171,6 +174,7 @@ class HitMap {
           jsonResult.cast<Map<String, dynamic>>(),
           checkIgnoredLines: checkIgnoredLines,
           packagesPath: packagesPath,
+          packagePath: packagePath,
         ));
       }
     }
@@ -239,12 +243,14 @@ class _HitInfo {
 Future<Map<String, Map<int, int>>> createHitmap(
   List<Map<String, dynamic>> jsonResult, {
   bool checkIgnoredLines = false,
-  String? packagesPath,
+  @Deprecated('Use packagePath') String? packagesPath,
+  String? packagePath,
 }) async {
   final result = await HitMap.parseJson(
     jsonResult,
     checkIgnoredLines: checkIgnoredLines,
     packagesPath: packagesPath,
+    packagePath: packagePath,
   );
   return result.map((key, value) => MapEntry(key, value.lineHits));
 }
@@ -276,10 +282,13 @@ Future<Map<String, Map<int, int>>> parseCoverage(
   Iterable<File> files,
   int _, {
   bool checkIgnoredLines = false,
-  String? packagesPath,
+  @Deprecated('Use packagePath') String? packagesPath,
+  String? packagePath,
 }) async {
   final result = await HitMap.parseFiles(files,
-      checkIgnoredLines: checkIgnoredLines, packagesPath: packagesPath);
+      checkIgnoredLines: checkIgnoredLines,
+      packagesPath: packagesPath,
+      packagePath: packagePath);
   return result.map((key, value) => MapEntry(key, value.lineHits));
 }
 

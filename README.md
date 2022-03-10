@@ -44,17 +44,18 @@ all isolates are paused before collecting coverage.
 #### Formatting coverage data
 
 ```
-pub global run coverage:format_coverage --packages=app_package/.packages -i coverage.json
+pub global run coverage:format_coverage --package=app_package -i coverage.json
 ```
 
 or if the `pub global run` exectuables are on your PATH,
 
 ```
-format_coverage --packages=app_package/.packages -i coverage.json
+format_coverage --package=app_package -i coverage.json
 ```
 
 where `app_package` is the path to the package whose coverage is being
-collected. If `--sdk-root` is set, Dart SDK coverage will also be output.
+collected (defaults to the current working directory). If `--sdk-root` is set,
+Dart SDK coverage will also be output.
 
 #### Ignore lines from coverage
 

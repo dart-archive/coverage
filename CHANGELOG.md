@@ -14,6 +14,7 @@
   is collected.
 * Add a `branchHits` field to `HitMap`.
 * Add support for scraping the service URI from the new Dart VM service message.
+* Correctly parse package_config files on Windows when the root URI is relative.
 * Add a `--package` flag, which takes the package's root directory, instead of
   the .package file. Deprecate the `--packages` flag.
 * Deprecate the packagesPath parameter and add packagePath instead, in

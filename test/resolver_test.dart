@@ -11,12 +11,8 @@ void main() {
   group('Default Resolver', () {
     setUp(() async {
       await d.dir('foo', [
-        d.file('.packages', '''
-# Fake for testing!
-foo:file:///${d.sandbox}/foo/lib
-'''),
-        d.file('.bad.packages', 'thisIsntAPackagesFile!'),
         d.dir('.dart_tool', [
+          d.file('bad_package_config.json', 'thisIsntAPackageConfigFile!'),
           d.file('package_config.json', '''
 {
   "configVersion": 2,
@@ -44,13 +40,6 @@ foo:file:///${d.sandbox}/foo/lib
           '${d.sandbox}/foo/lib/foo.dart');
     });
 
-    test('can be created from a .packages file', () async {
-      final resolver = await Resolver.create(
-          packagesPath: p.join(d.sandbox, 'foo', '.packages'));
-      expect(resolver.resolve('package:foo/foo.dart'),
-          '${d.sandbox}/foo/lib/foo.dart');
-    });
-
     test('can be created from a package directory', () async {
       final resolver =
           await Resolver.create(packagePath: p.join(d.sandbox, 'foo'));
@@ -61,7 +50,8 @@ foo:file:///${d.sandbox}/foo/lib
     test('errors if the packagesFile is an unknown format', () async {
       expect(
           () async => await Resolver.create(
-              packagesPath: p.join(d.sandbox, 'foo', '.bad.packages')),
+              packagesPath: p.join(
+                  d.sandbox, 'foo', '.dart_tool', 'bad_package_config.json')),
           throwsA(isA<FormatException>()));
     });
   });

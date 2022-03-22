@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:package_config/package_config.dart';
@@ -106,31 +105,11 @@ class Resolver {
 
   static Map<String, Uri> _parsePackages(String packagesPath) {
     final content = File(packagesPath).readAsStringSync();
-    try {
-      final parsed =
-          PackageConfig.parseString(content, Uri.base.resolve(packagesPath));
-      return {
-        for (var package in parsed.packages)
-          package.name: package.packageUriRoot
-      };
-    } on FormatException catch (_) {
-      // It was probably an old style .packages file
-      final lines = LineSplitter.split(content);
-      final packageMap = <String, Uri>{};
-      for (var line in lines) {
-        if (line.startsWith('#')) continue;
-        final firstColon = line.indexOf(':');
-        if (firstColon == -1) {
-          throw FormatException(
-              'Unexpected package config format, expected an old style '
-              '.packages file or new style package_config.json file.',
-              content);
-        }
-        packageMap[line.substring(0, firstColon)] =
-            Uri.parse(line.substring(firstColon + 1, line.length));
-      }
-      return packageMap;
-    }
+    final parsed =
+        PackageConfig.parseString(content, Uri.base.resolve(packagesPath));
+    return {
+      for (var package in parsed.packages) package.name: package.packageUriRoot
+    };
   }
 
   static Future<Map<String, Uri>?> _parsePackage(String packagePath) async {

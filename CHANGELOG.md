@@ -14,8 +14,8 @@
   is collected.
 * Add a `branchHits` field to `HitMap`.
 * Add support for scraping the service URI from the new Dart VM service message.
-* Replace `--packages` flag with `--package`, which takes the package's root
-  directory, instead of the .package file.
+* Add a `--package` flag, which takes the package's root directory, instead of
+  the .package file. Deprecate the `--packages` flag.
 * Deprecate the packagesPath parameter and add packagePath instead, in
   `HitMap.parseJson`, `HitMap.parseFiles`, `createHitmap`, and `parseCoverage`.
 

@@ -18,6 +18,7 @@ class Environment {
     required this.input,
     required this.lcov,
     required this.output,
+    required this.packagesPath,
     required this.packagePath,
     required this.prettyPrint,
     required this.prettyPrintFunc,
@@ -35,7 +36,8 @@ class Environment {
   String input;
   bool lcov;
   IOSink output;
-  String? packagePath;
+  String? packagesPath;
+  String packagePath;
   bool prettyPrint;
   bool prettyPrintFunc;
   bool prettyPrintBranch;
@@ -55,6 +57,7 @@ Future<void> main(List<String> arguments) async {
     print('  # workers: ${env.workers}');
     print('  sdk-root: ${env.sdkRoot}');
     print('  package-path: ${env.packagePath}');
+    print('  packages-path: ${env.packagesPath}');
     print('  report-on: ${env.reportOn}');
     print('  check-ignore: ${env.checkIgnore}');
   }
@@ -63,6 +66,8 @@ Future<void> main(List<String> arguments) async {
   final hitmap = await HitMap.parseFiles(
     files,
     checkIgnoredLines: env.checkIgnore,
+    // ignore: deprecated_member_use_from_same_package
+    packagesPath: env.packagesPath,
     packagePath: env.packagePath,
   );
 
@@ -74,7 +79,11 @@ Future<void> main(List<String> arguments) async {
   String output;
   final resolver = env.bazel
       ? BazelResolver(workspacePath: env.bazelWorkspace)
-      : Resolver(packagePath: env.packagePath, sdkRoot: env.sdkRoot);
+      : Resolver(
+          packagesPath: env.packagesPath,
+          packagePath: env.packagePath,
+          sdkRoot: env.sdkRoot,
+        );
   final loader = Loader();
   if (env.prettyPrint) {
     output = await hitmap.prettyPrint(resolver, loader,
@@ -116,6 +125,8 @@ Environment parseArgs(List<String> arguments) {
   final parser = ArgParser();
 
   parser.addOption('sdk-root', abbr: 's', help: 'path to the SDK root');
+  parser.addOption('packages',
+      help: '[DEPRECATED] path to the package spec file');
   parser.addOption('package',
       help: 'root directory of the package', defaultsTo: '.');
   parser.addOption('in', abbr: 'i', help: 'input(s): may be file or directory');
@@ -185,11 +196,16 @@ Environment parseArgs(List<String> arguments) {
     }
   }
 
-  final packagePath = args['package'] as String?;
-  if (packagePath != null) {
-    if (!FileSystemEntity.isDirectorySync(packagePath)) {
-      fail('Package spec "${args["package"]}" not found, or not a directory.');
+  final packagesPath = args['packages'] as String?;
+  if (packagesPath != null) {
+    if (!FileSystemEntity.isFileSync(packagesPath)) {
+      fail('Package spec "${args["packages"]}" not found, or not a file.');
     }
+  }
+
+  final packagePath = args['package'] as String;
+  if (!FileSystemEntity.isDirectorySync(packagePath)) {
+    fail('Package spec "${args["package"]}" not found, or not a directory.');
   }
 
   if (args['in'] == null) fail('No input files given.');
@@ -254,6 +270,7 @@ Environment parseArgs(List<String> arguments) {
       input: input,
       lcov: lcov,
       output: output,
+      packagesPath: packagesPath,
       packagePath: packagePath,
       prettyPrint: prettyPrint,
       prettyPrintFunc: prettyPrintFunc,

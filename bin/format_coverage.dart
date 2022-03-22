@@ -79,7 +79,7 @@ Future<void> main(List<String> arguments) async {
   String output;
   final resolver = env.bazel
       ? BazelResolver(workspacePath: env.bazelWorkspace)
-      : Resolver(
+      : await Resolver.create(
           packagesPath: env.packagesPath,
           packagePath: env.packagePath,
           sdkRoot: env.sdkRoot,

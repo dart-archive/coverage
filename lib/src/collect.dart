@@ -251,8 +251,8 @@ Future<void> _processFunction(VmService service, IsolateRef isolateRef,
     final line = reportLines ? pos : _getLineFromTokenPos(script, pos);
 
     if (line == null) {
-      stderr.write(
-          'tokenPos $pos has no line mapping for script ${script.uri!}');
+      stderr
+          .write('tokenPos $pos has no line mapping for script ${script.uri!}');
       return;
     }
     hits.funcNames![line] = funcName;

@@ -70,8 +70,8 @@ Future<void> main(List<String> arguments) async {
 
   void printUsage() {
     print('Runs tests and collects coverage for a package. By default this '
-      "script assumes it's being run from the root directory of a package, and "
-      'outputs a coverage.json and lcov.info to ./coverage/');
+        "script assumes it's being run from the root directory of a package, and "
+        'outputs a coverage.json and lcov.info to ./coverage/');
     print('Usage: dart test_with_coverage.dart [OPTIONS...]\n');
     print(parser.usage);
   }
@@ -88,7 +88,7 @@ Future<void> main(List<String> arguments) async {
   }
 
   final packageDir = path.canonicalize(args['package'] as String);
-  if (!await FileSystemEntity.isDirectory(packageDir)) {
+  if (!FileSystemEntity.isDirectorySync(packageDir)) {
     fail('--package is not a valid directory.');
   }
 
@@ -102,7 +102,7 @@ Future<void> main(List<String> arguments) async {
   }
 
   final outDir = (args['out'] as String?) ?? path.join(packageDir, 'coverage');
-  if (!await FileSystemEntity.isDirectory(outDir)) {
+  if (!FileSystemEntity.isDirectorySync(outDir)) {
     await Directory(outDir).create(recursive: true);
   }
 

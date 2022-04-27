@@ -242,17 +242,17 @@ int? _getLineFromTokenPos(Script script, int tokenPos) {
 }
 
 Future<void> _processFunction(VmService service, IsolateRef isolateRef,
-    Script script, FuncRef funcRef, HitMap hits, bool reportLines) async {
+    Script script, FuncRef funcRef, HitMap hits) async {
   final func = await service.getObject(isolateRef.id!, funcRef.id!) as Func;
   final location = func.location;
   if (location != null) {
     final funcName = await _getFuncName(service, isolateRef, func);
-    final pos = location.tokenPos!;
-    final line = reportLines ? pos : _getLineFromTokenPos(script, pos);
+    final tokenPos = location.tokenPos!;
+    final line = _getLineFromTokenPos(script, tokenPos);
 
     if (line == null) {
-      stderr
-          .write('tokenPos $pos has no line mapping for script ${script.uri!}');
+      stderr.write(
+          'tokenPos $tokenPos has no line mapping for script ${script.uri!}');
       return;
     }
     hits.funcNames![line] = funcName;
@@ -305,8 +305,7 @@ Future<List<Map<String, dynamic>>> _getCoverageJson(
           await service.getObject(isolateRef.id!, libRef.id!) as Library;
       if (library.functions != null) {
         for (var funcRef in library.functions!) {
-          await _processFunction(
-              service, isolateRef, script!, funcRef, hits, reportLines);
+          await _processFunction(service, isolateRef, script!, funcRef, hits);
         }
       }
       if (library.classes != null) {
@@ -316,7 +315,7 @@ Future<List<Map<String, dynamic>>> _getCoverageJson(
           if (clazz.functions != null) {
             for (var funcRef in clazz.functions!) {
               await _processFunction(
-                  service, isolateRef, script!, funcRef, hits, reportLines);
+                  service, isolateRef, script!, funcRef, hits);
             }
           }
         }

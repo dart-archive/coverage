@@ -143,7 +143,6 @@ Future<void> main(List<String> arguments) async {
       final uri = extractVMServiceUri(line);
       if (uri != null) {
         serviceUriCompleter.complete(uri);
-        print('\n');
       }
     }
   });
@@ -155,7 +154,7 @@ Future<void> main(List<String> arguments) async {
     '--wait-paused',
     '--resume-isolates',
     '--uri=$serviceUri',
-    // '--scope-output=$packageName',  // TODO(#376) Uncomment this.
+    '--scope-output=$packageName',
     if (branchCoverage) '--branch-coverage',
     if (functionCoverage) '--function-coverage',
     '-o',
@@ -169,10 +168,10 @@ Future<void> main(List<String> arguments) async {
     '--lcov',
     '--check-ignore',
     '--package=$packageDir',
-    '--report-on=lib',
     '-i',
     outJson,
     '-o',
     outLcov,
   ], workingDir: thisDir);
+  exit(0);
 }

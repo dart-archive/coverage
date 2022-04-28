@@ -99,8 +99,8 @@ Future<void> main(List<String> arguments) async {
       (args['package-name'] as String?) ?? await getPackageName(packageDir);
   if (packageName == null) {
     fail(
-      "Couldn't figure out package name from --package. "
-      'Try passing --package-name explicitly.',
+      "Couldn't figure out package name from --package. Make sure this is a "
+      'package directory, or try passing --package-name explicitly.',
     );
   }
 
@@ -124,6 +124,7 @@ Future<void> main(List<String> arguments) async {
       }
     });
   }
+
   watchExitSignal(ProcessSignal.sighup);
   watchExitSignal(ProcessSignal.sigint);
   watchExitSignal(ProcessSignal.sigterm);

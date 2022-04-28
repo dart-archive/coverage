@@ -155,7 +155,7 @@ Future<void> main(List<String> arguments) async {
     '--wait-paused',
     '--resume-isolates',
     '--uri=$serviceUri',
-    '--scope-output=$packageName',
+    // '--scope-output=$packageName',  // TODO(#376) Uncomment this.
     if (branchCoverage) '--branch-coverage',
     if (functionCoverage) '--function-coverage',
     '-o',
@@ -169,6 +169,7 @@ Future<void> main(List<String> arguments) async {
     '--lcov',
     '--check-ignore',
     '--package=$packageDir',
+    '--report-on=lib',
     '-i',
     outJson,
     '-o',

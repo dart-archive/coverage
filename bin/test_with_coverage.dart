@@ -3,18 +3,18 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:io';
 import 'dart:convert' show utf8, LineSplitter;
+import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:coverage/src/util.dart' show extractVMServiceUri;
 import 'package:package_config/package_config.dart';
 import 'package:path/path.dart' as path;
-import 'package:coverage/src/util.dart' show extractVMServiceUri;
 
 final allProcesses = <Process>[];
 
 Future<void> dartRun(List<String> args,
-    {Function(String)? onStdout, String? workingDir}) async {
+    {void Function(String)? onStdout, String? workingDir}) async {
   final process = await Process.start(
     Platform.executable,
     args,
@@ -23,10 +23,12 @@ Future<void> dartRun(List<String> args,
   allProcesses.add(process);
   final broadStdout = process.stdout.asBroadcastStream();
   broadStdout.listen(stdout.add);
-  broadStdout
-      .transform(utf8.decoder)
-      .transform(const LineSplitter())
-      .listen(onStdout);
+  if (onStdout != null) {
+    broadStdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen(onStdout);
+  }
   process.stderr.listen(stderr.add);
   final result = await process.exitCode;
   if (result != 0) {
@@ -34,12 +36,21 @@ Future<void> dartRun(List<String> args,
   }
 }
 
-Future<String?> getPackageName(String packageDir) async {
+Future<String?> packageNameFromConfig(String packageDir) async {
   final config = await findPackageConfig(Directory(packageDir));
   return config?.packageOf(Uri.directory(packageDir))?.name;
 }
 
-Future<void> main(List<String> arguments) async {
+void watchExitSignal(ProcessSignal signal) {
+  signal.watch().listen((sig) {
+    for (final process in allProcesses) {
+      process.kill(sig);
+    }
+    exit(1);
+  });
+}
+
+ArgParser createArgParser() {
   final parser = ArgParser();
   parser.addOption(
     'package',
@@ -68,7 +79,24 @@ Future<void> main(List<String> arguments) async {
     help: 'Collect branch coverage info.',
   );
   parser.addFlag('help', abbr: 'h', negatable: false, help: 'Show this help.');
+  return parser;
+}
 
+class Flags {
+  Flags(this.packageDir, this.packageName, this.outDir, this.port,
+      this.testScript, this.functionCoverage, this.branchCoverage);
+
+  final String packageDir;
+  final String packageName;
+  final String outDir;
+  final String port;
+  final String testScript;
+  final bool functionCoverage;
+  final bool branchCoverage;
+}
+
+Future<Flags> parseArgs(List<String> arguments) async {
+  final parser = createArgParser();
   final args = parser.parse(arguments);
 
   void printUsage() {
@@ -95,8 +123,8 @@ Future<void> main(List<String> arguments) async {
     fail('--package is not a valid directory.');
   }
 
-  final packageName =
-      (args['package-name'] as String?) ?? await getPackageName(packageDir);
+  final packageName = (args['package-name'] as String?) ??
+      await packageNameFromConfig(packageDir);
   if (packageName == null) {
     fail(
       "Couldn't figure out package name from --package. Make sure this is a "
@@ -104,26 +132,25 @@ Future<void> main(List<String> arguments) async {
     );
   }
 
-  final outDir = (args['out'] as String?) ?? path.join(packageDir, 'coverage');
-  if (!FileSystemEntity.isDirectorySync(outDir)) {
-    await Directory(outDir).create(recursive: true);
-  }
+  return Flags(
+    packageDir,
+    packageName,
+    (args['out'] as String?) ?? path.join(packageDir, 'coverage'),
+    args['port'] as String,
+    args['test'] as String,
+    args['function-coverage'] as bool,
+    args['branch-coverage'] as bool,
+  );
+}
 
-  final port = args['port'] as String;
-  final testScript = args['test'] as String;
-  final functionCoverage = args['function-coverage'] as bool;
-  final branchCoverage = args['branch-coverage'] as bool;
+Future<void> main(List<String> arguments) async {
+  final flags = await parseArgs(arguments);
   final thisDir = path.dirname(Platform.script.path);
-  final outJson = path.join(outDir, 'coverage.json');
-  final outLcov = path.join(outDir, 'lcov.info');
+  final outJson = path.join(flags.outDir, 'coverage.json');
+  final outLcov = path.join(flags.outDir, 'lcov.info');
 
-  void watchExitSignal(ProcessSignal signal) {
-    signal.watch().listen((sig) {
-      for (final process in allProcesses) {
-        process.kill(sig);
-      }
-      exit(1);
-    });
+  if (!FileSystemEntity.isDirectorySync(flags.outDir)) {
+    await Directory(flags.outDir).create(recursive: true);
   }
 
   watchExitSignal(ProcessSignal.sighup);
@@ -132,12 +159,12 @@ Future<void> main(List<String> arguments) async {
 
   final serviceUriCompleter = Completer<Uri>();
   final testProcess = dartRun([
-    if (branchCoverage) '--branch-coverage',
+    if (flags.branchCoverage) '--branch-coverage',
     'run',
     '--pause-isolates-on-exit',
     '--disable-service-auth-codes',
-    '--enable-vm-service=$port',
-    testScript,
+    '--enable-vm-service=${flags.port}',
+    flags.testScript,
   ], onStdout: (line) {
     if (!serviceUriCompleter.isCompleted) {
       final uri = extractVMServiceUri(line);
@@ -154,9 +181,9 @@ Future<void> main(List<String> arguments) async {
     '--wait-paused',
     '--resume-isolates',
     '--uri=$serviceUri',
-    '--scope-output=$packageName',
-    if (branchCoverage) '--branch-coverage',
-    if (functionCoverage) '--function-coverage',
+    '--scope-output=${flags.packageName}',
+    if (flags.branchCoverage) '--branch-coverage',
+    if (flags.functionCoverage) '--function-coverage',
     '-o',
     outJson,
   ], workingDir: thisDir);
@@ -167,7 +194,7 @@ Future<void> main(List<String> arguments) async {
     'format_coverage.dart',
     '--lcov',
     '--check-ignore',
-    '--package=$packageDir',
+    '--package=${flags.packageDir}',
     '-i',
     outJson,
     '-o',

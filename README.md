@@ -27,7 +27,7 @@ For the common use case where you just want to run all your tests, and generate
 an lcov.info file, you can use the test_with_coverage script:
 
 ```
-pub global run coverage:test_with_coverage
+dart pub global run coverage:test_with_coverage
 ```
 
 By default, this script assumes it's being run from the root directory of a

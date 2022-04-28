@@ -11,6 +11,8 @@ import 'package:package_config/package_config.dart';
 import 'package:path/path.dart' as path;
 import 'package:coverage/src/util.dart' show extractVMServiceUri;
 
+final allProcesses = <Process>[];
+
 Future<void> dartRun(List<String> args,
     {Function(String)? onStdout, String? workingDir}) async {
   final process = await Process.start(
@@ -18,6 +20,7 @@ Future<void> dartRun(List<String> args,
     args,
     workingDirectory: workingDir,
   );
+  allProcesses.add(process);
   final broadStdout = process.stdout.asBroadcastStream();
   broadStdout.listen(stdout.add);
   broadStdout
@@ -113,6 +116,17 @@ Future<void> main(List<String> arguments) async {
   final thisDir = path.dirname(Platform.script.path);
   final outJson = path.join(outDir, 'coverage.json');
   final outLcov = path.join(outDir, 'lcov.info');
+
+  void watchExitSignal(ProcessSignal signal) {
+    signal.watch().listen((sig) {
+      for (final process in allProcesses) {
+        process.kill(sig);
+      }
+    });
+  }
+  watchExitSignal(ProcessSignal.sighup);
+  watchExitSignal(ProcessSignal.sigint);
+  watchExitSignal(ProcessSignal.sigterm);
 
   final serviceUriCompleter = Completer<Uri>();
   final testProcess = dartRun([

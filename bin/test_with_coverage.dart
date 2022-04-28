@@ -122,6 +122,7 @@ Future<void> main(List<String> arguments) async {
       for (final process in allProcesses) {
         process.kill(sig);
       }
+      exit(1);
     });
   }
 

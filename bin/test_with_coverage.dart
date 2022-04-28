@@ -138,7 +138,6 @@ Future<void> main(List<String> arguments) async {
     'collect_coverage.dart',
     '--wait-paused',
     '--resume-isolates',
-    '--connect-timeout=30',
     '--uri=$serviceUri',
     '--scope-output=$packageName',
     if (branchCoverage) '--branch-coverage',

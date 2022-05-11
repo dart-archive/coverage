@@ -120,7 +120,8 @@ void main() {
 
       final jsonResult = await collect(Uri(), false, false, false, null,
           serviceOverrideForTesting: service);
-      final result = await HitMap.parseJson(jsonResult['coverage']!);
+      final result = await HitMap.parseJson(
+          jsonResult['coverage'] as List<Map<String, dynamic>>);
 
       expect(result.length, 2);
       expect(result['package:foo/foo.dart']?.lineHits, {12: 1, 47: 0});
@@ -162,7 +163,8 @@ void main() {
 
       final jsonResult = await collect(Uri(), false, false, false, null,
           serviceOverrideForTesting: service);
-      final result = await HitMap.parseJson(jsonResult['coverage']!);
+      final result = await HitMap.parseJson(
+          jsonResult['coverage'] as List<Map<String, dynamic>>);
 
       expect(result.length, 2);
       expect(result['package:foo/foo.dart']?.lineHits, {12: 1, 47: 0});
@@ -210,7 +212,8 @@ void main() {
 
       final jsonResult = await collect(Uri(), false, false, false, {'foo'},
           serviceOverrideForTesting: service);
-      final result = await HitMap.parseJson(jsonResult['coverage']!);
+      final result = await HitMap.parseJson(
+          jsonResult['coverage'] as List<Map<String, dynamic>>);
 
       expect(result.length, 1);
       expect(result['package:foo/foo.dart']?.lineHits, {12: 1, 47: 0});
@@ -242,7 +245,8 @@ void main() {
 
       final jsonResult = await collect(Uri(), false, false, false, {'foo'},
           serviceOverrideForTesting: service);
-      final result = await HitMap.parseJson(jsonResult['coverage']!);
+      final result = await HitMap.parseJson(
+          jsonResult['coverage'] as List<Map<String, dynamic>>);
 
       expect(result.length, 1);
       expect(result['package:foo/foo.dart']?.lineHits, {12: 1, 47: 0});

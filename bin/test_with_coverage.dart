@@ -145,9 +145,7 @@ Future<Flags> parseArgs(List<String> arguments) async {
 
 Future<void> main(List<String> arguments) async {
   final flags = await parseArgs(arguments);
-  final invokedScriptDir = path.dirname(Platform.script.path);
-  final isPubGlobal = invokedScriptDir.contains('.pub-cache');
-  final isThisDir = !isPubGlobal && !invokedScriptDir.contains('.dart_tool');
+  final runVars = _RunVars.fromScriptPath();
 
   final outJson = path.join(flags.outDir, 'coverage.json');
   final outLcov = path.join(flags.outDir, 'lcov.info');
@@ -178,14 +176,9 @@ Future<void> main(List<String> arguments) async {
   });
   final serviceUri = await serviceUriCompleter.future;
 
-  final base = [
-    if (isPubGlobal) ...<String>['pub', 'global'],
-    'run',
-  ];
-
   await dartRun([
-    ...base,
-    if (isThisDir) 'collect_coverage.dart' else 'coverage:collect_coverage',
+    ...runVars.base,
+    runVars.collect,
     '--wait-paused',
     '--resume-isolates',
     '--uri=$serviceUri',
@@ -194,12 +187,12 @@ Future<void> main(List<String> arguments) async {
     if (flags.functionCoverage) '--function-coverage',
     '-o',
     outJson,
-  ], workingDir: isThisDir ? invokedScriptDir : null);
+  ]);
   await testProcess;
 
   await dartRun([
-    ...base,
-    if (isThisDir) 'format_coverage.dart' else 'coverage:format_coverage',
+    ...runVars.base,
+    runVars.format,
     '--lcov',
     '--check-ignore',
     '--package=${flags.packageDir}',
@@ -207,6 +200,56 @@ Future<void> main(List<String> arguments) async {
     outJson,
     '-o',
     outLcov,
-  ], workingDir: isThisDir ? invokedScriptDir : null);
+  ]);
   exit(0);
+}
+
+class _RunVars {
+  _RunVars(
+    this.base,
+    this.collect,
+    this.format,
+  );
+
+  factory _RunVars.fromScriptPath() {
+    final String scriptPath = Platform.script.path;
+
+    // the dir where the script was invoked could be:
+    // - ../bin/test_with_coverage.dart or
+    // - a cached snapshot
+    final invokedScriptDir = path.dirname(scriptPath);
+
+    // Probably invoked by: dart run coverage:test_with_coverage
+    // The dart tool builds a snapshot under the: /path/to/user_package/.dart_tool subdirectory
+    if (invokedScriptDir.contains('.dart_tool')) {
+      return _RunVars(
+          ['run'], 'coverage:collect_coverage', 'coverage:format_coverage');
+    }
+
+    if (path.basename(invokedScriptDir) == 'bin' &&
+        path.basename(scriptPath) == 'test_with_coverage.dart') {
+      final collect =
+          File(path.join(invokedScriptDir, 'collect_coverage.dart'));
+      final format = File(path.join(invokedScriptDir, 'format_coverage.dart'));
+
+      if (collect.existsSync() && format.existsSync()) {
+        return _RunVars(['run'], collect.path, format.path);
+      }
+    }
+
+    // Probably invoked by: dart pub global run coverage:test_with_coverage
+    // the tool builds a snapshot under the /path/to/cache/global_packages/... subdirectory
+    // it is unreliable to check for presents of .pub-cache or Pub\Cache on Windows
+    // since it can be overritten by the user
+    if (invokedScriptDir.contains('global_packages')) {
+      return _RunVars(['pub', 'global', 'run'], 'coverage:collect_coverage',
+          'coverage:format_coverage');
+    }
+
+    throw 'Could not determine how to run subcommands coverage:collect_coverage and coverage:format_coverage.';
+  }
+
+  final List<String> base;
+  final String collect;
+  final String format;
 }

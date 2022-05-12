@@ -145,7 +145,10 @@ Future<Flags> parseArgs(List<String> arguments) async {
 
 Future<void> main(List<String> arguments) async {
   final flags = await parseArgs(arguments);
-  final thisDir = path.dirname(Platform.script.path);
+  final invokedScriptDir = path.dirname(Platform.script.path);
+  final isPubGlobal = invokedScriptDir.contains('.pub-cache');
+  final isThisDir = !isPubGlobal && !invokedScriptDir.contains('.dart_tool');
+
   final outJson = path.join(flags.outDir, 'coverage.json');
   final outLcov = path.join(flags.outDir, 'lcov.info');
 
@@ -175,9 +178,14 @@ Future<void> main(List<String> arguments) async {
   });
   final serviceUri = await serviceUriCompleter.future;
 
-  await dartRun([
+  final base = [
+    if (isPubGlobal) ...<String>['pub', 'global'],
     'run',
-    'collect_coverage.dart',
+  ];
+
+  await dartRun([
+    ...base,
+    if (isThisDir) 'collect_coverage.dart' else 'coverage:collect_coverage',
     '--wait-paused',
     '--resume-isolates',
     '--uri=$serviceUri',
@@ -186,12 +194,12 @@ Future<void> main(List<String> arguments) async {
     if (flags.functionCoverage) '--function-coverage',
     '-o',
     outJson,
-  ], workingDir: thisDir);
+  ], workingDir: isThisDir ? invokedScriptDir : null);
   await testProcess;
 
   await dartRun([
-    'run',
-    'format_coverage.dart',
+    ...base,
+    if (isThisDir) 'format_coverage.dart' else 'coverage:format_coverage',
     '--lcov',
     '--check-ignore',
     '--package=${flags.packageDir}',
@@ -199,6 +207,6 @@ Future<void> main(List<String> arguments) async {
     outJson,
     '-o',
     outLcov,
-  ], workingDir: thisDir);
+  ], workingDir: isThisDir ? invokedScriptDir : null);
   exit(0);
 }

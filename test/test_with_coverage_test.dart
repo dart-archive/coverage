@@ -37,7 +37,6 @@ void main() {
 
   tearDownAll(() {
     for (final entry in [
-      Directory(_pubCachePathInTestPkgSubDir),
       Directory(p.join(_testPkgDirPath, '.dart_tool')),
       Directory(p.join(_testPkgDirPath, 'coverage')),
       File(p.join(_testPkgDirPath, '.packages')),

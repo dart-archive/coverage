@@ -40,7 +40,7 @@ void main() {
 
     final hitMap = await HitMap.parseJson(coverage, checkIgnoredLines: true);
     checkHitmap(hitMap);
-    final Resolver resolver = await HitMap.createResolver();
+    final Resolver resolver = await Resolver.create();
     final Map<String, List<List<int>>?> ignoredLinesInFilesCache = {};
     final hitMap2 = HitMap.parseJsonSync(coverage,
         checkIgnoredLines: true,

@@ -188,18 +188,12 @@ class HitMap {
     @Deprecated('Use packagePath') String? packagesPath,
     String? packagePath,
   }) async {
-    final Resolver resolver = await createResolver(
+    final Resolver resolver = await Resolver.create(
         packagesPath: packagesPath, packagePath: packagePath);
     return parseJsonSync(jsonResult,
         checkIgnoredLines: checkIgnoredLines,
         ignoredLinesInFilesCache: {},
         resolver: resolver);
-  }
-
-  static Future<Resolver> createResolver(
-      {String? packagesPath, String? packagePath}) async {
-    return await Resolver.create(
-        packagesPath: packagesPath, packagePath: packagePath);
   }
 
   /// Generates a merged hitmap from a set of coverage JSON files.

@@ -262,7 +262,6 @@ Future<void> _processFunction(VmService service, IsolateRef isolateRef,
     final funcName = await _getFuncName(service, isolateRef, func);
     final tokenPos = location.tokenPos!;
     final line = _getLineFromTokenPos(script, tokenPos);
-
     if (line == null) {
       stderr.writeln(
           'tokenPos $tokenPos in function ${funcRef.name} has no line mapping '

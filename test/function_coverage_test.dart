@@ -32,7 +32,7 @@ void main() {
     expect(isolateFile.funcHits, {
       7: 1,
       12: 0, // TODO(#398): This abstract method should be ignored.
-      19: 1,
+      16: 1,
       21: 1,
       25: 1,
       29: 1,
@@ -43,7 +43,7 @@ void main() {
     expect(isolateFile.funcNames, {
       7: 'normalFunction',
       12: 'BaseClass.abstractMethod',
-      19: 'SomeClass.SomeClass',
+      16: 'SomeClass.SomeClass',
       21: 'SomeClass.normalMethod',
       25: 'SomeClass.staticMethod',
       29: 'SomeClass.abstractMethod',
@@ -66,8 +66,8 @@ void main() {
         p.absolute(p.join('test', 'test_files', 'test_library_part.dart'));
     final testLibraryPartUri = p.toUri(testLibraryPartPath).toString();
     expect(hitMap, contains(testLibraryPartUri));
-    final libraryPartFile = hitMap[testLibraryPartUri]!;
     // TODO(#399): Fix handling of part files then re-enable this check.
+    // final libraryPartFile = hitMap[testLibraryPartUri]!;
     // expect(libraryPartFile.funcHits, {7: 1});
     // expect(libraryPartFile.funcNames, {7: 'otherLibraryFunction'});
   });

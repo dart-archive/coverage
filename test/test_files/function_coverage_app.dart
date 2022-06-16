@@ -13,10 +13,10 @@ abstract class BaseClass {
 }
 
 class SomeClass extends BaseClass {
+  SomeClass() : x = 123;
+
   // Creates an implicit getter and setter that should be ignored.
   int x;
-
-  SomeClass() : x = 123;
 
   int normalMethod() {
     return 123;
@@ -44,7 +44,7 @@ class OtherClass {
   }
 }
 
-main() {
+void main() {
   print(normalFunction());
   print(SomeClass().normalMethod());
   print(SomeClass.staticMethod());

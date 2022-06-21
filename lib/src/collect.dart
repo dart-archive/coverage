@@ -272,11 +272,10 @@ Future<List<Map<String, dynamic>>> _getCoverageJson(
       Script script, FuncRef funcRef, HitMap hits) async {
     final func = await service.getObject(isolateRef.id!, funcRef.id!) as Func;
     final location = func.location;
-    if (!(func.isAbstract ?? false) && location != null) {
+    if (!(func.implicit ?? false) && !(func.isAbstract ?? false) && location != null) {
       final funcName = await _getFuncName(service, isolateRef, func);
       final tokenPos = location.tokenPos!;
       final line = _getLineFromTokenPos(script, tokenPos);
-
       if (line == null) {
         if (_debugTokenPositions) {
           stderr.writeln(

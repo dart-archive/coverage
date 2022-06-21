@@ -256,24 +256,29 @@ int? _getLineFromTokenPos(Script script, int tokenPos) {
 }
 
 Future<void> _processFunction(VmService service, IsolateRef isolateRef,
-    Script script, FuncRef funcRef, HitMap hits) async {
+    Future<Script?> Function(ScriptRef?) scriptGetter, FuncRef funcRef, HitMap hits) async {
   final func = await service.getObject(isolateRef.id!, funcRef.id!) as Func;
   final location = func.location;
-  if (location != null) {
-    final funcName = await _getFuncName(service, isolateRef, func);
-    final tokenPos = location.tokenPos!;
-    final line = _getLineFromTokenPos(script, tokenPos);
-
-    if (line == null) {
-      if (_debugTokenPositions) {
-        stderr.writeln(
-            'tokenPos $tokenPos in function ${funcRef.name} has no line '
-            'mapping for script ${script.uri!}');
-      }
-      return;
-    }
-    hits.funcNames![line] = funcName;
+  if (location == null) {
+    return;
   }
+  final script = await scriptGetter(location.script);
+  if (script == null) {
+    return;
+  }
+  final funcName = await _getFuncName(service, isolateRef, func);
+  final tokenPos = location.tokenPos!;
+  final line = _getLineFromTokenPos(script, tokenPos);
+
+  if (line == null) {
+    if (_debugTokenPositions) {
+      stderr.writeln(
+          'tokenPos $tokenPos in function ${funcRef.name} has no line '
+          'mapping for script ${script.uri!}');
+    }
+    return;
+  }
+  hits.funcNames![line] = funcName;
 }
 
 /// Returns a JSON coverage list backward-compatible with pre-1.16.0 SDKs.
@@ -288,6 +293,18 @@ Future<List<Map<String, dynamic>>> _getCoverageJson(
   final scripts = <ScriptRef, Script>{};
   final libraries = <LibraryRef>{};
   final needScripts = functionCoverage || !reportLines;
+
+  Future<Script?> getScript(ScriptRef? scriptRef) async {
+    if (scriptRef == null) {
+      return null;
+    }
+    if (!scripts.containsKey(scriptRef)) {
+      scripts[scriptRef] =
+          await service.getObject(isolateRef.id!, scriptRef.id!) as Script;
+    }
+    return scripts[scriptRef];
+  }
+
   for (var range in report.ranges!) {
     final scriptRef = report.scripts![range.scriptIndex!];
     final scriptUri = Uri.parse(scriptRef.uri!);
@@ -303,12 +320,7 @@ Future<List<Map<String, dynamic>>> _getCoverageJson(
 
     Script? script;
     if (needScripts) {
-      if (!scripts.containsKey(scriptRef)) {
-        scripts[scriptRef] =
-            await service.getObject(isolateRef.id!, scriptRef.id!) as Script;
-      }
-      script = scripts[scriptRef];
-
+      script = await getScript(scriptRef);
       if (script == null) continue;
     }
 
@@ -322,7 +334,7 @@ Future<List<Map<String, dynamic>>> _getCoverageJson(
           await service.getObject(isolateRef.id!, libRef.id!) as Library;
       if (library.functions != null) {
         for (var funcRef in library.functions!) {
-          await _processFunction(service, isolateRef, script!, funcRef, hits);
+          await _processFunction(service, isolateRef, getScript, funcRef, hits);
         }
       }
       if (library.classes != null) {
@@ -332,7 +344,7 @@ Future<List<Map<String, dynamic>>> _getCoverageJson(
           if (clazz.functions != null) {
             for (var funcRef in clazz.functions!) {
               await _processFunction(
-                  service, isolateRef, script!, funcRef, hits);
+                  service, isolateRef, getScript, funcRef, hits);
             }
           }
         }

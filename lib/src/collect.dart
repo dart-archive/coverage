@@ -11,7 +11,7 @@ import 'util.dart';
 import 'hitmap.dart';
 
 const _retryInterval = Duration(milliseconds: 200);
-const _debugTokenPositions = false;
+const _debugTokenPositions = bool.fromEnvironment('DEBUG_COVERAGE');
 
 /// Collects coverage for all isolates in the running VM.
 ///

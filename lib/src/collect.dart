@@ -259,7 +259,7 @@ Future<void> _processFunction(VmService service, IsolateRef isolateRef,
     Future<Script?> Function(ScriptRef?) scriptGetter, FuncRef funcRef, HitMap hits) async {
   final func = await service.getObject(isolateRef.id!, funcRef.id!) as Func;
   final location = func.location;
-  if (location == null) {
+  if (!(func.implicit ?? false) && location != null) {
     return;
   }
   final script = await scriptGetter(location.script);

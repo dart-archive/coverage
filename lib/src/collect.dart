@@ -278,7 +278,9 @@ Future<List<Map<String, dynamic>>> _getCoverageJson(
     }
     return scripts[scriptRef];
   }
-  HitMap getHitMap(Uri scriptUri) => hitMaps.putIfAbsent(scriptUri, () => HitMap());
+
+  HitMap getHitMap(Uri scriptUri) =>
+      hitMaps.putIfAbsent(scriptUri, () => HitMap());
 
   Future<void> processFunction(FuncRef funcRef) async {
     final func = await service.getObject(isolateRef.id!, funcRef.id!) as Func;

@@ -298,7 +298,6 @@ Future<List<Map<String, dynamic>>> _getCoverageJson(
     final funcName = await _getFuncName(service, isolateRef, func);
     final tokenPos = location.tokenPos!;
     final line = _getLineFromTokenPos(script, tokenPos);
-
     if (line == null) {
       if (_debugTokenPositions) {
         stderr.writeln(

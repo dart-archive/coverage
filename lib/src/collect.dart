@@ -308,8 +308,7 @@ Future<List<Map<String, dynamic>>> _getCoverageJson(
     }
     final hits = getHitMap(Uri.parse(script.uri!));
     hits.funcHits ??= <int, int>{};
-    hits.funcNames ??= <int, String>{};
-    hits.funcNames![line] = funcName;
+    (hits.funcNames ??= <int, String>{})[line] = funcName;
   }
 
   for (var range in report.ranges!) {

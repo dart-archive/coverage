@@ -153,7 +153,7 @@ void main() {
       // be very careful if you change the test file
       expect(res, contains('      0|  return a - b;'));
 
-      expect(res, contains('|  return _withTimeout(() async {'),
+      expect(res, contains('|  return withTimeout(() async {'),
           reason: 'be careful if you change lib/src/util.dart');
 
       final hitLineRegexp = RegExp(r'\s+(\d+)\|  return a \+ b;');
@@ -176,7 +176,7 @@ void main() {
       // be very careful if you change the test file
       expect(res, contains('      0|  return a - b;'));
 
-      expect(res, contains('|  return _withTimeout(() async {'),
+      expect(res, contains('|  return withTimeout(() async {'),
           reason: 'be careful if you change lib/src/util.dart');
 
       final hitLineRegexp = RegExp(r'\s+(\d+)\|  return a \+ b;');

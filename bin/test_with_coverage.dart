@@ -3,34 +3,31 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:convert' show utf8, LineSplitter;
 import 'dart:io';
 
 import 'package:args/args.dart';
-import 'package:coverage/src/util.dart' show extractVMServiceUri;
+import 'package:coverage/src/util.dart'
+    show StandardOutExtension, extractVMServiceUri;
 import 'package:package_config/package_config.dart';
 import 'package:path/path.dart' as path;
 
 import 'collect_coverage.dart' as collect_coverage;
 import 'format_coverage.dart' as format_coverage;
 
-final allProcesses = <Process>[];
+final _allProcesses = <Process>[];
 
-Future<void> dartRun(List<String> args,
+Future<void> _dartRun(List<String> args,
     {void Function(String)? onStdout, String? workingDir}) async {
   final process = await Process.start(
     Platform.executable,
     args,
     workingDirectory: workingDir,
   );
-  allProcesses.add(process);
+  _allProcesses.add(process);
   final broadStdout = process.stdout.asBroadcastStream();
   broadStdout.listen(stdout.add);
   if (onStdout != null) {
-    broadStdout
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())
-        .listen(onStdout);
+    broadStdout.lines().listen(onStdout);
   }
   process.stderr.listen(stderr.add);
   final result = await process.exitCode;
@@ -39,55 +36,63 @@ Future<void> dartRun(List<String> args,
   }
 }
 
-Future<String?> packageNameFromConfig(String packageDir) async {
+Future<String?> _packageNameFromConfig(String packageDir) async {
   final config = await findPackageConfig(Directory(packageDir));
   return config?.packageOf(Uri.directory(packageDir))?.name;
 }
 
-void watchExitSignal(ProcessSignal signal) {
+void _watchExitSignal(ProcessSignal signal) {
   signal.watch().listen((sig) {
-    for (final process in allProcesses) {
+    for (final process in _allProcesses) {
       process.kill(sig);
     }
     exit(1);
   });
 }
 
-ArgParser createArgParser() {
-  final parser = ArgParser();
-  parser.addOption(
+ArgParser _createArgParser() => ArgParser()
+  ..addOption(
     'package',
     help: 'Root directory of the package to test.',
     defaultsTo: '.',
-  );
-  parser.addOption(
+  )
+  ..addOption(
     'package-name',
     help: 'Name of the package to test. '
         'Deduced from --package if not provided.',
-  );
-  parser.addOption('port', help: 'VM service port.', defaultsTo: '8181');
-  parser.addOption('out',
-      abbr: 'o', help: 'Output directory. Defaults to <package-dir>/coverage.');
-  parser.addOption('test', help: 'Test script to run.', defaultsTo: 'test');
-  parser.addFlag(
+  )
+  ..addOption('port', help: 'VM service port.', defaultsTo: '8181')
+  ..addOption(
+    'out',
+    abbr: 'o',
+    help: 'Output directory. Defaults to <package-dir>/coverage.',
+  )
+  ..addOption('test', help: 'Test script to run.', defaultsTo: 'test')
+  ..addFlag(
     'function-coverage',
     abbr: 'f',
     defaultsTo: false,
     help: 'Collect function coverage info.',
-  );
-  parser.addFlag(
+  )
+  ..addFlag(
     'branch-coverage',
     abbr: 'b',
     defaultsTo: false,
     help: 'Collect branch coverage info.',
-  );
-  parser.addFlag('help', abbr: 'h', negatable: false, help: 'Show this help.');
-  return parser;
-}
+  )
+  ..addFlag('help', abbr: 'h', negatable: false, help: 'Show this help.');
 
 class Flags {
-  Flags(this.packageDir, this.packageName, this.outDir, this.port,
-      this.testScript, this.functionCoverage, this.branchCoverage);
+  Flags(
+    this.packageDir,
+    this.packageName,
+    this.outDir,
+    this.port,
+    this.testScript,
+    this.functionCoverage,
+    this.branchCoverage, {
+    required this.rest,
+  });
 
   final String packageDir;
   final String packageName;
@@ -96,18 +101,24 @@ class Flags {
   final String testScript;
   final bool functionCoverage;
   final bool branchCoverage;
+  final List<String> rest;
 }
 
-Future<Flags> parseArgs(List<String> arguments) async {
-  final parser = createArgParser();
+Future<Flags> _parseArgs(List<String> arguments) async {
+  final parser = _createArgParser();
   final args = parser.parse(arguments);
 
   void printUsage() {
-    print('Runs tests and collects coverage for a package. By default this '
-        "script assumes it's being run from the root directory of a package, and "
-        'outputs a coverage.json and lcov.info to ./coverage/');
-    print('Usage: dart test_with_coverage.dart [OPTIONS...]\n');
-    print(parser.usage);
+    print('''
+Runs tests and collects coverage for a package.
+
+By default this  script assumes it's being run from the root directory of a
+package, and outputs a coverage.json and lcov.info to ./coverage/
+
+Usage: test_with_coverage [OPTIONS...] [-- <test script OPTIONS>]
+
+${parser.usage}
+''');
   }
 
   Never fail(String msg) {
@@ -127,7 +138,7 @@ Future<Flags> parseArgs(List<String> arguments) async {
   }
 
   final packageName = (args['package-name'] as String?) ??
-      await packageNameFromConfig(packageDir);
+      await _packageNameFromConfig(packageDir);
   if (packageName == null) {
     fail(
       "Couldn't figure out package name from --package. Make sure this is a "
@@ -143,11 +154,12 @@ Future<Flags> parseArgs(List<String> arguments) async {
     args['test'] as String,
     args['function-coverage'] as bool,
     args['branch-coverage'] as bool,
+    rest: args.rest,
   );
 }
 
 Future<void> main(List<String> arguments) async {
-  final flags = await parseArgs(arguments);
+  final flags = await _parseArgs(arguments);
   final outJson = path.join(flags.outDir, 'coverage.json');
   final outLcov = path.join(flags.outDir, 'lcov.info');
 
@@ -155,28 +167,32 @@ Future<void> main(List<String> arguments) async {
     await Directory(flags.outDir).create(recursive: true);
   }
 
-  watchExitSignal(ProcessSignal.sighup);
-  watchExitSignal(ProcessSignal.sigint);
+  _watchExitSignal(ProcessSignal.sighup);
+  _watchExitSignal(ProcessSignal.sigint);
   if (!Platform.isWindows) {
-    watchExitSignal(ProcessSignal.sigterm);
+    _watchExitSignal(ProcessSignal.sigterm);
   }
 
   final serviceUriCompleter = Completer<Uri>();
-  final testProcess = dartRun([
-    if (flags.branchCoverage) '--branch-coverage',
-    'run',
-    '--pause-isolates-on-exit',
-    '--disable-service-auth-codes',
-    '--enable-vm-service=${flags.port}',
-    flags.testScript,
-  ], onStdout: (line) {
-    if (!serviceUriCompleter.isCompleted) {
-      final uri = extractVMServiceUri(line);
-      if (uri != null) {
-        serviceUriCompleter.complete(uri);
+  final testProcess = _dartRun(
+    [
+      if (flags.branchCoverage) '--branch-coverage',
+      'run',
+      '--pause-isolates-on-exit',
+      '--disable-service-auth-codes',
+      '--enable-vm-service=${flags.port}',
+      flags.testScript,
+      ...flags.rest,
+    ],
+    onStdout: (line) {
+      if (!serviceUriCompleter.isCompleted) {
+        final uri = extractVMServiceUri(line);
+        if (uri != null) {
+          serviceUriCompleter.complete(uri);
+        }
       }
-    }
-  });
+    },
+  );
   final serviceUri = await serviceUriCompleter.future;
 
   await collect_coverage.main([

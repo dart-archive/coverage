@@ -3,13 +3,13 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:coverage/coverage.dart';
 import 'package:coverage/src/util.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
+import 'package:test_process/test_process.dart';
 
 import 'test_util.dart';
 
@@ -154,7 +154,7 @@ void main() {
       // be very careful if you change the test file
       expect(res, contains('      0|  return a - b;'));
 
-      expect(res, contains('|  return _withTimeout(() async {'),
+      expect(res, contains('|  return withTimeout(() async {'),
           reason: 'be careful if you change lib/src/util.dart');
 
       final hitLineRegexp = RegExp(r'\s+(\d+)\|  return a \+ b;');
@@ -177,7 +177,7 @@ void main() {
       // be very careful if you change the test file
       expect(res, contains('      0|  return a - b;'));
 
-      expect(res, contains('|  return _withTimeout(() async {'),
+      expect(res, contains('|  return withTimeout(() async {'),
           reason: 'be careful if you change lib/src/util.dart');
 
       final hitLineRegexp = RegExp(r'\s+(\d+)\|  return a \+ b;');
@@ -263,22 +263,9 @@ Future<Map<String, HitMap>> _getHitMap() async {
     _sampleAppPath
   ];
   final sampleProcess =
-      await Process.start(Platform.resolvedExecutable, sampleAppArgs);
+      await TestProcess.start(Platform.resolvedExecutable, sampleAppArgs);
 
-  // Capture the VM service URI.
-  final serviceUriCompleter = Completer<Uri>();
-  sampleProcess.stdout
-      .transform(utf8.decoder)
-      .transform(LineSplitter())
-      .listen((line) {
-    if (!serviceUriCompleter.isCompleted) {
-      final serviceUri = extractVMServiceUri(line);
-      if (serviceUri != null) {
-        serviceUriCompleter.complete(serviceUri);
-      }
-    }
-  });
-  final serviceUri = await serviceUriCompleter.future;
+  final serviceUri = await serviceUriFromProcess(sampleProcess.stdoutStream());
 
   // collect hit map.
   final coverageJson = (await collect(serviceUri, true, true, false, <String>{},
@@ -286,12 +273,7 @@ Future<Map<String, HitMap>> _getHitMap() async {
       branchCoverage: true))['coverage'] as List<Map<String, dynamic>>;
   final hitMap = HitMap.parseJson(coverageJson);
 
-  // wait for sample app to terminate.
-  final exitCode = await sampleProcess.exitCode;
-  if (exitCode != 0) {
-    throw ProcessException(Platform.resolvedExecutable, sampleAppArgs,
-        'Fatal error. Exit code: $exitCode', exitCode);
-  }
-  await sampleProcess.stderr.drain();
+  await sampleProcess.shouldExit(0);
+
   return hitMap;
 }

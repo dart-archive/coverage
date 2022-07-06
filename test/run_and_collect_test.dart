@@ -16,25 +16,16 @@ final _isolateLibFileUri = p.toUri(p.absolute(_isolateLibPath)).toString();
 void main() {
   test('runAndCollect', () async {
     // use runAndCollect and verify that the results match w/ running manually
-    final json = await runAndCollect(testAppPath);
-    expect(json.keys, unorderedEquals(<String>['type', 'coverage']));
-    expect(json, containsPair('type', 'CodeCoverage'));
-
-    final coverage = json['coverage'] as List<Map<String, dynamic>>;
+    final coverage = coverageDataFromJson(await runAndCollect(testAppPath));
     expect(coverage, isNotEmpty);
 
-    final sources = coverage.fold<Map<String, dynamic>>(<String, dynamic>{},
-        (Map<String, dynamic> map, dynamic value) {
-      final sourceUri = value['source'] as String;
-      map.putIfAbsent(sourceUri, () => <Map>[]).add(value);
-      return map;
-    });
+    final sources = coverage.sources();
 
-    for (var sampleCoverageData in sources[_sampleAppFileUri]) {
+    for (var sampleCoverageData in sources[_sampleAppFileUri]!) {
       expect(sampleCoverageData['hits'], isNotNull);
     }
 
-    for (var sampleCoverageData in sources[_isolateLibFileUri]) {
+    for (var sampleCoverageData in sources[_isolateLibFileUri]!) {
       expect(sampleCoverageData['hits'], isNotEmpty);
     }
 
@@ -91,7 +82,7 @@ void checkIgnoredLinesInFilesCache(
   final String packageUtilKey = keys
       .where((element) => element.endsWith('package:coverage/src/util.dart'))
       .single;
-  expect(ignoredLinesInFilesCache[packageUtilKey], []);
+  expect(ignoredLinesInFilesCache[packageUtilKey], isEmpty);
   expect(ignoredLinesInFilesCache[testAppKey], null /* means whole file */);
   expect(ignoredLinesInFilesCache[testAppIsolateKey], [
     [51, 51],

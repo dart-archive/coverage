@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:coverage/coverage.dart';
 import 'package:coverage/src/util.dart';
@@ -19,19 +18,10 @@ final _isolateLibFileUri = p.toUri(p.absolute(_isolateLibPath)).toString();
 
 void main() {
   test('collect_coverage_api', () async {
-    final json = await _collectCoverage();
-    expect(json.keys, unorderedEquals(<String>['type', 'coverage']));
-    expect(json, containsPair('type', 'CodeCoverage'));
-
-    final coverage = json['coverage'] as List;
+    final coverage = coverageDataFromJson(await _collectCoverage());
     expect(coverage, isNotEmpty);
 
-    final sources = coverage.cast<Map>().fold(<String, List<Map>>{},
-        (Map<String, List<Map>> map, value) {
-      final sourceUri = value['source'] as String;
-      map.putIfAbsent(sourceUri, () => <Map>[]).add(value);
-      return map;
-    });
+    final sources = coverage.sources();
 
     for (var sampleCoverageData in sources[_sampleAppFileUri]!) {
       expect(sampleCoverageData['hits'], isNotEmpty);
@@ -43,20 +33,12 @@ void main() {
   });
 
   test('collect_coverage_api with scoped output', () async {
-    final json =
-        await _collectCoverage(scopedOutput: <String>{}..add('coverage'));
-    expect(json.keys, unorderedEquals(<String>['type', 'coverage']));
-    expect(json, containsPair('type', 'CodeCoverage'));
-
-    final coverage = json['coverage'] as List;
+    final coverage = coverageDataFromJson(
+      await _collectCoverage(scopedOutput: <String>{}..add('coverage')),
+    );
     expect(coverage, isNotEmpty);
 
-    final sources = coverage.fold(<String, dynamic>{},
-        (Map<String, dynamic> map, dynamic value) {
-      final sourceUri = value['source'] as String;
-      map.putIfAbsent(sourceUri, () => <Map>[]).add(value);
-      return map;
-    });
+    final sources = coverage.sources();
 
     for (var key in sources.keys) {
       final uri = Uri.parse(key);
@@ -65,54 +47,47 @@ void main() {
   });
 
   test('collect_coverage_api with isolateIds', () async {
-    final json = await _collectCoverage(isolateIds: true);
-    expect(json.keys, unorderedEquals(<String>['type', 'coverage']));
-    expect(json, containsPair('type', 'CodeCoverage'));
-
-    final coverage = json['coverage'] as List<Map<String, dynamic>>;
+    final coverage =
+        coverageDataFromJson(await _collectCoverage(isolateIds: true));
     expect(coverage, isEmpty);
   });
 
   test('collect_coverage_api with function coverage', () async {
-    final json = await _collectCoverage(functionCoverage: true);
-    expect(json.keys, unorderedEquals(<String>['type', 'coverage']));
-    expect(json, containsPair('type', 'CodeCoverage'));
-
-    final coverage = json['coverage'] as List;
+    final coverage =
+        coverageDataFromJson(await _collectCoverage(functionCoverage: true));
     expect(coverage, isNotEmpty);
 
-    final sources = coverage.cast<Map>().fold(<String, List<Map>>{},
-        (Map<String, List<Map>> map, value) {
-      final sourceUri = value['source'] as String;
-      map.putIfAbsent(sourceUri, () => <Map>[]).add(value);
-      return map;
-    });
+    final sources = coverage.sources();
 
-    for (var sampleCoverageData in sources[_sampleAppFileUri]!) {
-      expect(sampleCoverageData['funcNames'], isNotEmpty);
-      expect(sampleCoverageData['funcHits'], isNotEmpty);
-    }
+    final functionInfo = functionInfoFromSources(sources);
 
-    for (var sampleCoverageData in sources[_isolateLibFileUri]!) {
-      expect(sampleCoverageData['funcNames'], isNotEmpty);
-      expect(sampleCoverageData['funcHits'], isNotEmpty);
-    }
+    expect(
+      functionInfo[_sampleAppFileUri]!,
+      {
+        'main': 1,
+        'usedMethod': 1,
+        'unusedMethod': 0,
+      },
+    );
+
+    expect(
+      functionInfo[_isolateLibFileUri]!,
+      {
+        'BarClass.BarClass': 1,
+        'fooAsync': 1,
+        'fooSync': 1,
+        'isolateTask': 1,
+        'BarClass.baz': 1
+      },
+    );
   });
 
   test('collect_coverage_api with branch coverage', () async {
-    final json = await _collectCoverage(branchCoverage: true);
-    expect(json.keys, unorderedEquals(<String>['type', 'coverage']));
-    expect(json, containsPair('type', 'CodeCoverage'));
-
-    final coverage = json['coverage'] as List;
+    final coverage =
+        coverageDataFromJson(await _collectCoverage(branchCoverage: true));
     expect(coverage, isNotEmpty);
 
-    final sources = coverage.cast<Map>().fold(<String, List<Map>>{},
-        (Map<String, List<Map>> map, value) {
-      final sourceUri = value['source'] as String;
-      map.putIfAbsent(sourceUri, () => <Map>[]).add(value);
-      return map;
-    });
+    final sources = coverage.sources();
 
     // Dart VM versions before 2.17 don't support branch coverage.
     expect(sources[_sampleAppFileUri],
@@ -132,21 +107,7 @@ Future<Map<String, dynamic>> _collectCoverage(
   // run the sample app, with the right flags
   final sampleProcess = await runTestApp(openPort);
 
-  // Capture the VM service URI.
-  final serviceUriCompleter = Completer<Uri>();
-  sampleProcess.stdout
-      .transform(utf8.decoder)
-      .transform(LineSplitter())
-      .listen((line) {
-    if (!serviceUriCompleter.isCompleted) {
-      final serviceUri = extractVMServiceUri(line);
-      if (serviceUri != null) {
-        serviceUriCompleter.complete(serviceUri);
-      }
-    }
-  });
-
-  final serviceUri = await serviceUriCompleter.future;
+  final serviceUri = await serviceUriFromProcess(sampleProcess.stdoutStream());
   final isolateIdSet = isolateIds ? <String>{} : null;
 
   return collect(serviceUri, true, true, false, scopedOutput,

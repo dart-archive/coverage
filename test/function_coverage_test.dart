@@ -3,13 +3,14 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:convert' show json, LineSplitter, utf8;
+import 'dart:convert' show json;
 import 'dart:io';
 
 import 'package:coverage/coverage.dart';
 import 'package:coverage/src/util.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
+import 'package:test_process/test_process.dart';
 
 import 'test_util.dart';
 
@@ -66,10 +67,9 @@ void main() {
         p.absolute(p.join('test', 'test_files', 'test_library_part.dart'));
     final testLibraryPartUri = p.toUri(testLibraryPartPath).toString();
     expect(hitMap, contains(testLibraryPartUri));
-    // TODO(#399): Fix handling of part files then re-enable this check.
-    // final libraryPartFile = hitMap[testLibraryPartUri]!;
-    // expect(libraryPartFile.funcHits, {7: 1});
-    // expect(libraryPartFile.funcNames, {7: 'otherLibraryFunction'});
+    final libraryPartFile = hitMap[testLibraryPartUri]!;
+    expect(libraryPartFile.funcHits, {7: 1});
+    expect(libraryPartFile.funcNames, {7: 'otherLibraryFunction'});
   });
 }
 
@@ -79,47 +79,29 @@ Future<String> _collectCoverage() async {
   final openPort = await getOpenPort();
 
   // Run the sample app with the right flags.
-  final sampleProcess = await Process.start(Platform.resolvedExecutable, [
+  final sampleProcess = await TestProcess.start(Platform.resolvedExecutable, [
     '--enable-vm-service=$openPort',
     '--pause_isolates_on_exit',
     _funcCovApp
   ]);
 
-  // Capture the VM service URI.
-  final serviceUriCompleter = Completer<Uri>();
-  sampleProcess.stdout
-      .transform(utf8.decoder)
-      .transform(LineSplitter())
-      .listen((line) {
-    if (!serviceUriCompleter.isCompleted) {
-      final serviceUri = extractVMServiceUri(line);
-      if (serviceUri != null) {
-        serviceUriCompleter.complete(serviceUri);
-      }
-    }
-  });
-  final serviceUri = await serviceUriCompleter.future;
+  final serviceUri = await serviceUriFromProcess(sampleProcess.stdoutStream());
 
   // Run the collection tool.
-  final toolResult = await Process.run(Platform.resolvedExecutable, [
+  final toolResult = await TestProcess.start(Platform.resolvedExecutable, [
     _collectAppPath,
     '--function-coverage',
     '--uri',
     '$serviceUri',
     '--resume-isolates',
     '--wait-paused'
-  ]).timeout(timeout, onTimeout: () {
+  ]);
+
+  await toolResult.shouldExit(0).timeout(timeout, onTimeout: () {
     throw 'We timed out waiting for the tool to finish.';
   });
 
-  print(toolResult.stderr);
-  if (toolResult.exitCode != 0) {
-    print(toolResult.stdout);
-    fail('Tool failed with exit code ${toolResult.exitCode}.');
-  }
+  await sampleProcess.shouldExit();
 
-  await sampleProcess.exitCode;
-  await sampleProcess.stderr.drain();
-
-  return toolResult.stdout as String;
+  return toolResult.stdoutStream().join('\n');
 }

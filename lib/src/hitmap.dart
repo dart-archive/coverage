@@ -99,7 +99,7 @@ class HitMap {
       final ignoredLines = ignoredLinesList.iterator;
       var hasCurrent = ignoredLines.moveNext();
 
-      bool _shouldIgnoreLine(Iterator<List<int>> ignoredRanges, int line) {
+      bool shouldIgnoreLine(Iterator<List<int>> ignoredRanges, int line) {
         if (!hasCurrent || ignoredRanges.current.isEmpty) {
           return false;
         }
@@ -138,7 +138,7 @@ class HitMap {
           final k = hits[i];
           if (k is int) {
             // Single line.
-            if (_shouldIgnoreLine(ignoredLines, k)) continue;
+            if (shouldIgnoreLine(ignoredLines, k)) continue;
 
             addToMap(hitMap, k, hits[i + 1] as int);
           } else if (k is String) {
@@ -147,7 +147,7 @@ class HitMap {
             final start = int.parse(k.substring(0, splitPos));
             final end = int.parse(k.substring(splitPos + 1));
             for (var j = start; j <= end; j++) {
-              if (_shouldIgnoreLine(ignoredLines, j)) continue;
+              if (shouldIgnoreLine(ignoredLines, j)) continue;
 
               addToMap(hitMap, j, hits[i + 1] as int);
             }
@@ -348,28 +348,25 @@ List<T> _flattenMap<T>(Map map) {
 }
 
 /// Returns a JSON hit map backward-compatible with pre-1.16.0 SDKs.
-Map<String, dynamic> hitmapToJson(HitMap hitmap, Uri scriptUri) {
-  final json = <String, dynamic>{};
-  json['source'] = '$scriptUri';
-  json['script'] = {
-    'type': '@Script',
-    'fixedId': true,
-    'id': 'libraries/1/scripts/${Uri.encodeComponent(scriptUri.toString())}',
-    'uri': '$scriptUri',
-    '_kind': 'library',
-  };
-  json['hits'] = _flattenMap<int>(hitmap.lineHits);
-  if (hitmap.funcHits != null) {
-    json['funcHits'] = _flattenMap<int>(hitmap.funcHits!);
-  }
-  if (hitmap.funcNames != null) {
-    json['funcNames'] = _flattenMap<dynamic>(hitmap.funcNames!);
-  }
-  if (hitmap.branchHits != null) {
-    json['branchHits'] = _flattenMap<int>(hitmap.branchHits!);
-  }
-  return json;
-}
+Map<String, dynamic> hitmapToJson(HitMap hitmap, Uri scriptUri) =>
+    <String, dynamic>{
+      'source': '$scriptUri',
+      'script': {
+        'type': '@Script',
+        'fixedId': true,
+        'id':
+            'libraries/1/scripts/${Uri.encodeComponent(scriptUri.toString())}',
+        'uri': '$scriptUri',
+        '_kind': 'library',
+      },
+      'hits': _flattenMap<int>(hitmap.lineHits),
+      if (hitmap.funcHits != null)
+        'funcHits': _flattenMap<int>(hitmap.funcHits!),
+      if (hitmap.funcNames != null)
+        'funcNames': _flattenMap<dynamic>(hitmap.funcNames!),
+      if (hitmap.branchHits != null)
+        'branchHits': _flattenMap<int>(hitmap.branchHits!),
+    };
 
 /// Sorts the hits array based on the line numbers.
 List _sortHits(List hits) {

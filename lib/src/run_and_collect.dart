@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:convert' show utf8, LineSplitter;
 import 'dart:io';
 
 import 'collect.dart';
@@ -17,41 +16,35 @@ Future<Map<String, dynamic>> runAndCollect(String scriptPath,
   final dartArgs = [
     '--enable-vm-service',
     '--pause_isolates_on_exit',
+    if (checked) '--checked',
+    scriptPath,
+    ...?scriptArgs,
   ];
 
-  if (checked) {
-    dartArgs.add('--checked');
-  }
-
-  dartArgs.add(scriptPath);
-
-  if (scriptArgs != null) {
-    dartArgs.addAll(scriptArgs);
-  }
-
   final process = await Process.start(Platform.executable, dartArgs);
-  final serviceUriCompleter = Completer<Uri>();
-  process.stdout
-      .transform(utf8.decoder)
-      .transform(const LineSplitter())
-      .listen((line) {
-    final uri = extractVMServiceUri(line);
-    if (uri != null) {
-      serviceUriCompleter.complete(uri);
-    }
-  });
 
-  final serviceUri = await serviceUriCompleter.future;
+  final serviceUri = await serviceUriFromProcess(process.stdout.lines());
   Map<String, dynamic> coverage;
   try {
-    coverage = await collect(serviceUri, true, true, includeDart, <String>{},
-        timeout: timeout);
+    coverage = await collect(
+      serviceUri,
+      true,
+      true,
+      includeDart,
+      <String>{},
+      timeout: timeout,
+    );
   } finally {
     await process.stderr.drain();
   }
   final exitStatus = await process.exitCode;
   if (exitStatus != 0) {
-    throw 'Process exited with exit code $exitStatus';
+    throw ProcessException(
+      Platform.executable,
+      dartArgs,
+      'Process failed.',
+      exitStatus,
+    );
   }
   return coverage;
 }

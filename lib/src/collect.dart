@@ -7,8 +7,8 @@ import 'dart:io';
 
 import 'package:vm_service/vm_service.dart';
 
-import 'util.dart';
 import 'hitmap.dart';
+import 'util.dart';
 
 const _retryInterval = Duration(milliseconds: 200);
 const _debugTokenPositions = bool.fromEnvironment('DEBUG_COVERAGE');
@@ -268,24 +268,47 @@ Future<List<Map<String, dynamic>>> _getCoverageJson(
   final libraries = <LibraryRef>{};
   final needScripts = functionCoverage || !reportLines;
 
-  Future<void> processFunction(
-      Script script, FuncRef funcRef, HitMap hits) async {
-    final func = await service.getObject(isolateRef.id!, funcRef.id!) as Func;
-    final location = func.location;
-    if (!(func.implicit ?? false) && !(func.isAbstract ?? false) && location != null) {
-      final funcName = await _getFuncName(service, isolateRef, func);
-      final tokenPos = location.tokenPos!;
-      final line = _getLineFromTokenPos(script, tokenPos);
-      if (line == null) {
-        if (_debugTokenPositions) {
-          stderr.writeln(
-              'tokenPos $tokenPos in function ${funcRef.name} has no line '
-              'mapping for script ${script.uri!}');
-        }
-        return;
-      }
-      hits.funcNames![line] = funcName;
+  Future<Script?> getScript(ScriptRef? scriptRef) async {
+    if (scriptRef == null) {
+      return null;
     }
+    if (!scripts.containsKey(scriptRef)) {
+      scripts[scriptRef] =
+          await service.getObject(isolateRef.id!, scriptRef.id!) as Script;
+    }
+    return scripts[scriptRef];
+  }
+
+  HitMap getHitMap(Uri scriptUri) =>
+      hitMaps.putIfAbsent(scriptUri, () => HitMap());
+
+  Future<void> processFunction(FuncRef funcRef) async {
+    final func = await service.getObject(isolateRef.id!, funcRef.id!) as Func;
+    if (func.implicit ?? false || func.abstract ?? false) {
+      return;
+    }
+    final location = func.location;
+    if (location == null) {
+      return;
+    }
+    final script = await getScript(location.script);
+    if (script == null) {
+      return;
+    }
+    final funcName = await _getFuncName(service, isolateRef, func);
+    final tokenPos = location.tokenPos!;
+    final line = _getLineFromTokenPos(script, tokenPos);
+    if (line == null) {
+      if (_debugTokenPositions) {
+        stderr.writeln(
+            'tokenPos $tokenPos in function ${funcRef.name} has no line '
+            'mapping for script ${script.uri!}');
+      }
+      return;
+    }
+    final hits = getHitMap(Uri.parse(script.uri!));
+    hits.funcHits ??= <int, int>{};
+    (hits.funcNames ??= <int, String>{})[line] = funcName;
   }
 
   for (var range in report.ranges!) {
@@ -299,30 +322,23 @@ Future<List<Map<String, dynamic>>> _getCoverageJson(
     if (!includeDart && scriptUri.scheme == 'dart') continue;
 
     // Look up the hit maps for this script (shared across isolates).
-    final hits = hitMaps.putIfAbsent(scriptUri, () => HitMap());
+    final hits = getHitMap(scriptUri);
 
     Script? script;
     if (needScripts) {
-      if (!scripts.containsKey(scriptRef)) {
-        scripts[scriptRef] =
-            await service.getObject(isolateRef.id!, scriptRef.id!) as Script;
-      }
-      script = scripts[scriptRef];
-
+      script = await getScript(scriptRef);
       if (script == null) continue;
     }
 
     // If the script's library isn't loaded, load it then look up all its funcs.
     final libRef = script?.library;
     if (functionCoverage && libRef != null && !libraries.contains(libRef)) {
-      hits.funcHits ??= <int, int>{};
-      hits.funcNames ??= <int, String>{};
       libraries.add(libRef);
       final library =
           await service.getObject(isolateRef.id!, libRef.id!) as Library;
       if (library.functions != null) {
         for (var funcRef in library.functions!) {
-          await processFunction(script!, funcRef, hits);
+          await processFunction(funcRef);
         }
       }
       if (library.classes != null) {
@@ -331,7 +347,7 @@ Future<List<Map<String, dynamic>>> _getCoverageJson(
               await service.getObject(isolateRef.id!, classRef.id!) as Class;
           if (clazz.functions != null) {
             for (var funcRef in clazz.functions!) {
-              await processFunction(script!, funcRef, hits);
+              await processFunction(funcRef);
             }
           }
         }
@@ -358,9 +374,9 @@ Future<List<Map<String, dynamic>>> _getCoverageJson(
     }
 
     forEachLine(coverage.hits!, (line) {
-      _incrementCountForKey(hits.lineHits, line);
+      hits.lineHits.increment(line);
       if (hits.funcNames != null && hits.funcNames!.containsKey(line)) {
-        _incrementCountForKey(hits.funcHits!, line);
+        hits.funcHits!.increment(line);
       }
     });
     forEachLine(coverage.misses!, (line) {
@@ -374,7 +390,7 @@ Future<List<Map<String, dynamic>>> _getCoverageJson(
     if (branchCoverage != null) {
       hits.branchHits ??= <int, int>{};
       forEachLine(branchCoverage.hits!, (line) {
-        _incrementCountForKey(hits.branchHits!, line);
+        hits.branchHits!.increment(line);
       });
       forEachLine(branchCoverage.misses!, (line) {
         hits.branchHits!.putIfAbsent(line, () => 0);
@@ -390,8 +406,8 @@ Future<List<Map<String, dynamic>>> _getCoverageJson(
   return coverage;
 }
 
-void _incrementCountForKey(Map<int, int> counter, int key) {
-  counter[key] = counter.containsKey(key) ? counter[key]! + 1 : 1;
+extension _MapExtension<T> on Map<T, int> {
+  void increment(T key) => this[key] = (this[key] ?? 0) + 1;
 }
 
 Future<String> _getFuncName(

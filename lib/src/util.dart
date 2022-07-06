@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 // TODO(cbracken) make generic
@@ -11,7 +13,7 @@ Future<dynamic> retry(Future Function() f, Duration interval,
     {Duration? timeout}) async {
   var keepGoing = true;
 
-  Future<dynamic> _withTimeout(Future Function() f, {Duration? duration}) {
+  Future<dynamic> withTimeout(Future Function() f, {Duration? duration}) {
     if (duration == null) {
       return f();
     }
@@ -25,7 +27,7 @@ Future<dynamic> retry(Future Function() f, Duration interval,
     });
   }
 
-  return _withTimeout(() async {
+  return withTimeout(() async {
     while (keepGoing) {
       try {
         return await f();
@@ -136,4 +138,23 @@ List<List<int>> getIgnoredLines(List<String>? lines) {
   }
 
   return isError ? [] : ignoredLines;
+}
+
+extension StandardOutExtension on Stream<List<int>> {
+  Stream<String> lines() =>
+      transform(SystemEncoding().decoder).transform(const LineSplitter());
+}
+
+Future<Uri> serviceUriFromProcess(Stream<String> procStdout) {
+  // Capture the VM service URI.
+  final serviceUriCompleter = Completer<Uri>();
+  procStdout.listen((line) {
+    if (!serviceUriCompleter.isCompleted) {
+      final serviceUri = extractVMServiceUri(line);
+      if (serviceUri != null) {
+        serviceUriCompleter.complete(serviceUri);
+      }
+    }
+  });
+  return serviceUriCompleter.future;
 }

@@ -4,13 +4,14 @@
 
 @Retry(3)
 import 'dart:async';
-import 'dart:convert' show json, LineSplitter, utf8;
+import 'dart:convert' show json;
 import 'dart:io';
 
 import 'package:coverage/coverage.dart';
 import 'package:coverage/src/util.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
+import 'package:test_process/test_process.dart';
 
 import 'test_util.dart';
 
@@ -25,26 +26,18 @@ void main() {
     final resultString = await _getCoverageResult();
 
     // analyze the output json
-    final jsonResult = json.decode(resultString) as Map<String, dynamic>;
+    final coverage =
+        coverageDataFromJson(json.decode(resultString) as Map<String, dynamic>);
 
-    expect(jsonResult.keys, unorderedEquals(<String>['type', 'coverage']));
-    expect(jsonResult, containsPair('type', 'CodeCoverage'));
-
-    final coverage = jsonResult['coverage'] as List;
     expect(coverage, isNotEmpty);
 
-    final sources = coverage.fold<Map<String, dynamic>>(<String, dynamic>{},
-        (Map<String, dynamic> map, dynamic value) {
-      final sourceUri = value['source'] as String;
-      map.putIfAbsent(sourceUri, () => <Map>[]).add(value);
-      return map;
-    });
+    final sources = coverage.sources();
 
-    for (var sampleCoverageData in sources[_sampleAppFileUri]) {
+    for (var sampleCoverageData in sources[_sampleAppFileUri]!) {
       expect(sampleCoverageData['hits'], isNotNull);
     }
 
-    for (var sampleCoverageData in sources[_isolateLibFileUri]) {
+    for (var sampleCoverageData in sources[_isolateLibFileUri]!) {
       expect(sampleCoverageData['hits'], isNotEmpty);
     }
   });
@@ -354,23 +347,11 @@ Future<String> _collectCoverage(
   final sampleProcess = await runTestApp(openPort);
 
   // Capture the VM service URI.
-  final serviceUriCompleter = Completer<Uri>();
-  sampleProcess.stdout
-      .transform(utf8.decoder)
-      .transform(LineSplitter())
-      .listen((line) {
-    if (!serviceUriCompleter.isCompleted) {
-      final serviceUri = extractVMServiceUri(line);
-      if (serviceUri != null) {
-        serviceUriCompleter.complete(serviceUri);
-      }
-    }
-  });
-  final serviceUri = await serviceUriCompleter.future;
+  final serviceUri = await serviceUriFromProcess(sampleProcess.stdoutStream());
 
   // Run the collection tool.
   // TODO: need to get all of this functionality in the lib
-  final toolResult = await Process.run(Platform.resolvedExecutable, [
+  final toolResult = await TestProcess.start(Platform.resolvedExecutable, [
     _collectAppPath,
     if (functionCoverage) '--function-coverage',
     if (branchCoverage) '--branch-coverage',
@@ -378,18 +359,13 @@ Future<String> _collectCoverage(
     '$serviceUri',
     '--resume-isolates',
     '--wait-paused'
-  ]).timeout(timeout, onTimeout: () {
+  ]);
+
+  await toolResult.shouldExit(0).timeout(timeout, onTimeout: () {
     throw 'We timed out waiting for the tool to finish.';
   });
 
-  if (toolResult.exitCode != 0) {
-    print(toolResult.stdout);
-    print(toolResult.stderr);
-    fail('Tool failed with exit code ${toolResult.exitCode}.');
-  }
+  await sampleProcess.shouldExit();
 
-  await sampleProcess.exitCode;
-  await sampleProcess.stderr.drain();
-
-  return toolResult.stdout as String;
+  return toolResult.stdoutStream().join('\n');
 }

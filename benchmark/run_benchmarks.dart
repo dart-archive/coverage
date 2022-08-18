@@ -67,7 +67,6 @@ class CoverageBenchmark extends AsyncBenchmarkBase {
         lcovFile,
       ]);
     }
-    await scriptProcess.exitCode;
   }
 }
 

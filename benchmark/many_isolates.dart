@@ -13,8 +13,8 @@ Future<void> main(List<String> args, dynamic message) async {
     int sum = 0;
     for (int i = 0; i < 100; ++i) {
       final port = ReceivePort();
-      final isolate = Isolate.spawnUri(
-          Uri.file('many_isolates.dart'), [], port.sendPort);
+      final isolate =
+          Isolate.spawnUri(Uri.file('many_isolates.dart'), [], port.sendPort);
       sum += await port.first as int;
       await isolate;
     }

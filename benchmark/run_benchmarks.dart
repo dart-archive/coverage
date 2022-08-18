@@ -6,20 +6,12 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:benchmark_harness/benchmark_harness.dart';
-import 'package:coverage/src/util.dart'
-    show StandardOutExtension, extractVMServiceUri;
 
 import '../bin/collect_coverage.dart' as collect_coverage;
 import '../bin/format_coverage.dart' as format_coverage;
 
 // Runs a test script with various different coverage configurations.
 class CoverageBenchmark extends AsyncBenchmarkBase {
-  final String script;
-  final bool gatherCoverage;
-  final bool functionCoverage;
-  final bool branchCoverage;
-  int iteration = 0;
-
   CoverageBenchmark(
     ScoreEmitter emitter,
     String name,
@@ -28,6 +20,12 @@ class CoverageBenchmark extends AsyncBenchmarkBase {
     this.functionCoverage = false,
     this.branchCoverage = false,
   }) : super(name, emitter: emitter);
+
+  final String script;
+  final bool gatherCoverage;
+  final bool functionCoverage;
+  final bool branchCoverage;
+  int iteration = 0;
 
   @override
   Future<void> run() async {
@@ -45,7 +43,7 @@ class CoverageBenchmark extends AsyncBenchmarkBase {
           '--disable-service-auth-codes',
           '--enable-vm-service=1234',
         ],
-        this.script,
+        script,
       ],
       mode: ProcessStartMode.detached,
     );
@@ -69,7 +67,7 @@ class CoverageBenchmark extends AsyncBenchmarkBase {
         lcovFile,
       ]);
     }
-    await scriptProcess;
+    await scriptProcess.exitCode;
   }
 }
 

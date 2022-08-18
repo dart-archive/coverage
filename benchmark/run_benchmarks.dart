@@ -33,7 +33,7 @@ class CoverageBenchmark extends AsyncBenchmarkBase {
     final lcovFile = 'data/$name $iteration lcov.info';
     ++iteration;
 
-    final scriptProcess = await Process.start(
+    await Process.start(
       Platform.executable,
       [
         if (branchCoverage) '--branch-coverage',

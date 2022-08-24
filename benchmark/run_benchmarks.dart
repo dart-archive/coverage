@@ -94,7 +94,7 @@ class JsonEmitter implements ScoreEmitter {
     _entries.add("""{
   "name": "$testName",
   "unit": "times slower",
-  "value": ${value / _baseline}
+  "value": ${(value / _baseline).toStringAsFixed(2)}
 }""");
   }
 

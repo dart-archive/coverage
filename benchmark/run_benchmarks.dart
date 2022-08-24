@@ -87,33 +87,49 @@ class JsonEmitter implements ScoreEmitter {
   JsonEmitter(this._baseline);
 
   final double _baseline;
-  final _entries = <String>[];
+  final _results = <String, double>{};
 
   @override
   void emit(String testName, double value) {
-    _entries.add("""{
-  "name": "$testName",
-  "unit": "times slower",
-  "value": ${(value / _baseline).toStringAsFixed(2)}
-}""");
+    _results[testName] = value;
   }
 
-  String write() => '[${_entries.join(',\n')}]';
+  String write() => '[${_results.entries.map((entry) => """{
+  "name": "${entry.key}",
+  "unit": "times slower",
+  "value": ${(entry.value / _baseline).toStringAsFixed(2)}
+}""").join(',\n')}]';
+}
+
+Future<void> runBenchmark(CoverageBenchmark benchmark) async {
+  for (int i = 0; i < 3; ++i) {
+    try {
+      await benchmark.report().timeout(Duration(minutes: 2));
+      return;
+    } on TimeoutException {
+      print('Timed out');
+    }
+  }
+  print('Timed out too many times. Giving up.');
+  exit(127);
 }
 
 Future<String> runBenchmarkSet(String name, String script) async {
   final captureEmitter = CaptureEmitter();
-  await CoverageBenchmark(captureEmitter, '$name - no coverage', script)
-      .report();
+  await runBenchmark(
+      CoverageBenchmark(captureEmitter, '$name - no coverage', script));
   final benchmarkBaseline = captureEmitter.capturedValue;
 
   final emitter = JsonEmitter(benchmarkBaseline);
-  await CoverageBenchmark(emitter, '$name - basic coverage', script,
-          gatherCoverage: true)
-      .report();
-  await CoverageBenchmark(emitter, '$name - branch coverage', script,
-          gatherCoverage: true, branchCoverage: true)
-      .report();
+  await runBenchmark(CoverageBenchmark(
+      emitter, '$name - basic coverage', script,
+      gatherCoverage: true));
+  await runBenchmark(CoverageBenchmark(
+      emitter, '$name - function coverage', script,
+      gatherCoverage: true, functionCoverage: true));
+  await runBenchmark(CoverageBenchmark(
+      emitter, '$name - branch coverage', script,
+      gatherCoverage: true, branchCoverage: true));
   return emitter.write();
 }
 

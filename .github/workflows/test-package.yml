@@ -83,7 +83,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-go@v1
+      - uses: dart-lang/setup-dart@v1.0
+        with:
+          sdk: dev
+      - name: Install dependencies
+        run: dart pub get
       - name: Run benchmark
         run: dart run benchmark/run_benchmarks.dart
       - name: Download previous benchmark data

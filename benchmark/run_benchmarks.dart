@@ -71,36 +71,59 @@ class CoverageBenchmark extends AsyncBenchmarkBase {
   }
 }
 
+// Emitter that just captures the value.
+class CaptureEmitter implements ScoreEmitter {
+  late double capturedValue;
+
+  @override
+  void emit(String testName, double value) {
+    capturedValue = value;
+  }
+}
+
 // Prints a JSON representation of the benchmark results, in a format compatible
 // with the github benchmark action.
 class JsonEmitter implements ScoreEmitter {
+  JsonEmitter(this._baseline);
+
+  final double _baseline;
   final _entries = <String>[];
 
   @override
   void emit(String testName, double value) {
     _entries.add("""{
   "name": "$testName",
-  "unit": "us",
-  "value": ${value.toInt()}
+  "unit": "times slower",
+  "value": ${value / _baseline}
 }""");
   }
 
   String write() => '[${_entries.join(',\n')}]';
 }
 
-Future<void> runBenchmarkSet(
-    ScoreEmitter emitter, String name, String script) async {
-  await CoverageBenchmark(emitter, '$name - no coverage', script).report();
+Future<String> runBenchmarkSet(String name, String script) async {
+  final captureEmitter = CaptureEmitter();
+  await CoverageBenchmark(captureEmitter, '$name - no coverage', script)
+      .report();
+  final benchmarkBaseline = captureEmitter.capturedValue;
+
+  final emitter = JsonEmitter(benchmarkBaseline);
   await CoverageBenchmark(emitter, '$name - basic coverage', script,
           gatherCoverage: true)
       .report();
+  await CoverageBenchmark(emitter, '$name - function coverage', script,
+          gatherCoverage: true, functionCoverage: true)
+      .report();
+  await CoverageBenchmark(emitter, '$name - branch coverage', script,
+          gatherCoverage: true, branchCoverage: true)
+      .report();
+  return emitter.write();
 }
 
 Future<void> main() async {
   // Assume this script was started from the root coverage directory. Change to
   // the benchmark directory.
   Directory.current = 'benchmark';
-  final emitter = JsonEmitter();
-  await runBenchmarkSet(emitter, 'Many isolates', 'many_isolates.dart');
-  File('data/benchmark_result.json').writeAsString(emitter.write());
+  final result = await runBenchmarkSet('Many isolates', 'many_isolates.dart');
+  File('data/benchmark_result.json').writeAsString(result);
 }

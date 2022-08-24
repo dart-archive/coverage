@@ -111,9 +111,6 @@ Future<String> runBenchmarkSet(String name, String script) async {
   await CoverageBenchmark(emitter, '$name - basic coverage', script,
           gatherCoverage: true)
       .report();
-  await CoverageBenchmark(emitter, '$name - function coverage', script,
-          gatherCoverage: true, functionCoverage: true)
-      .report();
   await CoverageBenchmark(emitter, '$name - branch coverage', script,
           gatherCoverage: true, branchCoverage: true)
       .report();

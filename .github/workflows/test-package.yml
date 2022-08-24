@@ -104,3 +104,4 @@ jobs:
           external-data-json-path: benchmark/data/cache/benchmark_result.json
           fail-on-alert: true
           comment-always: true
+          alert-threshold: 120%

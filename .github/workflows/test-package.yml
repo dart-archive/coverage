@@ -103,4 +103,4 @@ jobs:
           output-file-path: benchmark/data/benchmark_result.json
           external-data-json-path: benchmark/data/cache/benchmark_result.json
           fail-on-alert: true
-          comment-on-alert: true
+          comment-always: true

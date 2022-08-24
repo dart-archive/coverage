@@ -29,6 +29,7 @@ class CoverageBenchmark extends AsyncBenchmarkBase {
 
   @override
   Future<void> run() async {
+    print('Running $name...');
     final covFile = 'data/$name $iteration coverage.json';
     final lcovFile = 'data/$name $iteration lcov.info';
     ++iteration;
@@ -92,12 +93,6 @@ Future<void> runBenchmarkSet(
   await CoverageBenchmark(emitter, '$name - no coverage', script).report();
   await CoverageBenchmark(emitter, '$name - basic coverage', script,
           gatherCoverage: true)
-      .report();
-  await CoverageBenchmark(emitter, '$name - function coverage', script,
-          gatherCoverage: true, functionCoverage: true)
-      .report();
-  await CoverageBenchmark(emitter, '$name - branch coverage', script,
-          gatherCoverage: true, branchCoverage: true)
       .report();
 }
 

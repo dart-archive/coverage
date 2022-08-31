@@ -138,6 +138,5 @@ Future<void> main() async {
   // the benchmark directory.
   Directory.current = 'benchmark';
   final result = await runBenchmarkSet('Many isolates', 'many_isolates.dart');
-  File('data/benchmark_result.json').writeAsString(result);
-  exit(0);
+  await File('data/benchmark_result.json').writeAsString(result);
 }

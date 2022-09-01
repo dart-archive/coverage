@@ -13,7 +13,7 @@ dependencies:
   path: ^1.8.0
   source_maps: ^0.10.10
   stack_trace: ^1.10.0
-  vm_service: ^9.2.0
+  vm_service: ^9.4.0
 
 dev_dependencies:
   benchmark_harness: ^2.2.0
@@ -23,6 +23,10 @@ dev_dependencies:
   test: ^1.16.0
   test_descriptor: ^2.0.0
   test_process: ^2.0.0
+
+dependency_overrides:
+  vm_service:
+    path: /usr/local/google/home/liama/dart-sdk/sdk/pkg/vm_service/
 
 executables:
   collect_coverage:

@@ -10,6 +10,7 @@ import 'package:vm_service/vm_service.dart';
 
 import 'collect_coverage_mock_test.mocks.dart';
 
+@GenerateMocks([VmService])
 SourceReportRange _range(int scriptIndex, SourceReportCoverage coverage) =>
     SourceReportRange(
       scriptIndex: scriptIndex,
@@ -73,7 +74,6 @@ MockVmService _mockService(int majorVersion, int minorVersion) {
   return service;
 }
 
-@GenerateMocks([VmService])
 void main() {
   group('Mock VM Service', () {
     test('Collect coverage', () async {

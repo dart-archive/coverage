@@ -1,3 +1,7 @@
+## 1.5.2-dev
+
+- todo:
+
 ## 1.5.1
 
 - Fix bug where 'ingore-line' comments etc are applied even if they're inside

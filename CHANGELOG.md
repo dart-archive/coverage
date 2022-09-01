@@ -1,6 +1,6 @@
 ## 1.5.2-dev
 
-- todo:
+- Change the LICENSE file to the standard Dart BSD license.
 
 ## 1.5.1
 

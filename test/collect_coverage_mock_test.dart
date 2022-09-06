@@ -29,7 +29,7 @@ MockVmService _mockService(
   int majorVersion,
   int minorVersion, {
   Map<String, List<String>> isolateGroups = const {
-    'isolateGroup': const ['isolate'],
+    'isolateGroup': ['isolate'],
   },
 }) {
   final service = MockVmService();

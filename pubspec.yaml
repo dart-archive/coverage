@@ -24,10 +24,6 @@ dev_dependencies:
   test_descriptor: ^2.0.0
   test_process: ^2.0.0
 
-dependency_overrides:
-  vm_service:
-    path: /usr/local/google/home/liama/dart-sdk/sdk/pkg/vm_service/
-
 executables:
   collect_coverage:
   format_coverage:

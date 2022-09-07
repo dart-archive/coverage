@@ -124,7 +124,6 @@ Future<Map<String, dynamic>> _getAllCoverage(
   final branchCoverageSupported = _versionCheck(version, 3, 56);
   final libraryFilters = _versionCheck(version, 3, 57);
   final fastIsoGroups = _versionCheck(version, 3, 61);
-  print("ZZZZZZZZZZ: ${version.major}.${version.minor}   $fastIsoGroups");
   if (branchCoverage && !branchCoverageSupported) {
     branchCoverage = false;
     stderr.writeln('Branch coverage was requested, but is not supported'

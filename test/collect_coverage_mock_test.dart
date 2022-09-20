@@ -26,6 +26,7 @@ IsolateGroup _isoGroup(String id, List<IsolateRef> isolates) =>
     IsolateGroup(id: id, isolates: isolates);
 
 class FakeSentinelException implements SentinelException {
+  @override
   dynamic noSuchMethod(Invocation invocation) {}
 }
 

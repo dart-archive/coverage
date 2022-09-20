@@ -158,7 +158,7 @@ Future<Map<String, dynamic>> _getAllCoverage(
       coveredIsolateGroups.add(isolateGroupId);
     }
     if (scopedOutput.isNotEmpty && !libraryFilters) {
-      var scripts;
+      late final ScriptList scripts;
       try {
         scripts = await service.getScripts(isolateRef.id!);
       } on SentinelException {
@@ -170,7 +170,7 @@ Future<Map<String, dynamic>> _getAllCoverage(
         final scope = uri.path.split('/').first;
         // Skip scripts which should not be included in the report.
         if (!scopedOutput.contains(scope)) continue;
-        var scriptReport;
+        late final SourceReport scriptReport;
         try {
           scriptReport = await service.getSourceReport(
               isolateRef.id!, sourceReportKinds,
@@ -185,7 +185,7 @@ Future<Map<String, dynamic>> _getAllCoverage(
         allCoverage.addAll(coverage);
       }
     } else {
-      var isolateReport;
+      late final SourceReport isolateReport;
       try {
         isolateReport = await service.getSourceReport(
           isolateRef.id!,

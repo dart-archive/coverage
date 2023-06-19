@@ -271,5 +271,22 @@ void main() {
         [5, 6],
       ]);
     });
+
+    test('allow omitting space after //', () {
+      final lines = [
+        "final str = ''; //coverage:ignore-start",
+        "final str = ''; //coverage:ignore-line",
+        "final str = ''; //coverage:ignore-end",
+        "final str = ''; //coverage:ignore-line",
+        "final str = ''; //coverage:ignore-start",
+        "final str = ''; //coverage:ignore-end",
+      ];
+
+      expect(getIgnoredLines(lines), [
+        [1, 3],
+        [4, 4],
+        [5, 6],
+      ]);
+    });
   });
 }

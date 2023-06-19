@@ -74,10 +74,10 @@ Future<int> getOpenPort() async {
   }
 }
 
-final muliLineIgnoreStart = RegExp(r'// coverage:ignore-start\s*$');
-final muliLineIgnoreEnd = RegExp(r'// coverage:ignore-end\s*$');
-final singleLineIgnore = RegExp(r'// coverage:ignore-line\s*$');
-final ignoreFile = RegExp(r'// coverage:ignore-file\s*$');
+final muliLineIgnoreStart = RegExp(r'//\s*coverage:ignore-start\s*$');
+final muliLineIgnoreEnd = RegExp(r'//\s*coverage:ignore-end\s*$');
+final singleLineIgnore = RegExp(r'//\s*coverage:ignore-line\s*$');
+final ignoreFile = RegExp(r'//\s*coverage:ignore-file\s*$');
 
 /// Return list containing inclusive range of lines to be ignored by coverage.
 /// If there is a error in balancing the statements it will ignore nothing,

@@ -1,3 +1,9 @@
+## Current
+
+- allow omitting space between `//` and `coverage` in coverage ignore comments
+- allow text after coverage ignore comments
+- handle unbalanced ignore comments instead of silently erroring
+
 ## 1.6.3
 
 - Require Dart 2.18

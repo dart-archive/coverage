@@ -288,5 +288,22 @@ void main() {
         [5, 6],
       ]);
     });
+
+    test('allow text after ignore comments', () {
+      final lines = [
+        "final str = ''; // coverage:ignore-start due to XYZ",
+        "final str = ''; // coverage:ignore-line",
+        "final str = ''; // coverage:ignore-end due to XYZ",
+        "final str = ''; // coverage:ignore-line due to 123",
+        "final str = ''; // coverage:ignore-start",
+        "final str = ''; // coverage:ignore-end it is done",
+      ];
+
+      expect(getIgnoredLines(lines), [
+        [1, 3],
+        [4, 4],
+        [5, 6],
+      ]);
+    });
   });
 }

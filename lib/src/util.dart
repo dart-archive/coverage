@@ -108,36 +108,39 @@ List<List<int>> getIgnoredLines(List<String>? lines) {
     [0, lines.length]
   ];
 
-  var isError = false;
   var i = 0;
   while (i < lines.length) {
     if (lines[i].contains(ignoreFile)) return allLines;
 
-    if (lines[i].contains(muliLineIgnoreEnd)) isError = true;
-
     if (lines[i].contains(singleLineIgnore)) ignoredLines.add([i + 1, i + 1]);
 
     if (lines[i].contains(muliLineIgnoreStart)) {
+      var rangeCount = 1;
       final start = i;
       ++i;
       while (i < lines.length) {
-        if (lines[i].contains(ignoreFile)) return allLines;
-        if (lines[i].contains(muliLineIgnoreStart)) {
-          isError = true;
-          break;
-        }
-
-        if (lines[i].contains(muliLineIgnoreEnd)) {
-          ignoredLines.add([start + 1, i + 1]);
-          break;
+        final line = lines[i];
+        if (line.contains(ignoreFile)) return allLines;
+        if (line.contains(muliLineIgnoreStart)) {
+          rangeCount++;
+        } else if (line.contains(muliLineIgnoreEnd)) {
+          if (--rangeCount == 0) {
+            ignoredLines.add([start + 1, i + 1]);
+            break;
+          }
         }
         ++i;
+      }
+
+      if (rangeCount > 0) {
+        // unmatched muliLineIgnoreStart
+        ignoredLines.add([start + 1, i]);
       }
     }
     ++i;
   }
 
-  return isError ? [] : ignoredLines;
+  return ignoredLines;
 }
 
 extension StandardOutExtension on Stream<List<int>> {

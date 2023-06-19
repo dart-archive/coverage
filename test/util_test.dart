@@ -149,6 +149,7 @@ void main() {
         final str = ''; // coverage:ignore-end
         final str = '';
         final str = ''; // coverage:ignore-end
+        final str = '';
         ''',
       '''final str = ''; // coverage:ignore-start
         final str = '';
@@ -176,9 +177,39 @@ void main() {
         ''',
     ];
 
-    test('returns empty when the annotations are not balanced', () {
-      for (final content in invalidSources) {
-        expect(getIgnoredLines(content.split('\n')), isEmpty);
+    test('handles when the annotations are not balanced', () {
+      for (var i = 0; i < invalidSources.length; ++i) {
+        final lines = invalidSources[i].split('\n');
+        final res = getIgnoredLines(lines);
+
+        switch (i) {
+          case 0:
+            expect(res, [[1, lines.length]]);
+            break;
+          case 1:
+            expect(res, [[1, 6]]);
+            break;
+          case 2:
+            expect(res, [[1, 3]]);
+            break;
+          case 3:
+            expect(res, [[3, 5]]);
+            break;
+          case 4:
+            expect(res, isEmpty);
+            break;
+          case 5:
+            expect(res, [[3, lines.length]]);
+            break;
+          case 6:
+            expect(res, isEmpty);
+            break;
+          case 7:
+            expect(res, [[1, lines.length]]);
+            break;
+          default:
+            throw UnimplementedError('expectation for not balanced case $i');
+        }
       }
     });
 

@@ -194,7 +194,7 @@ void main() {
       }
     });
 
-    test('Returns [[0,lines.length]] when the whole file is ignored', () {
+    test('returns [[0,lines.length]] when the whole file is ignored', () {
       final lines = '''final str = ''; // coverage:ignore-start
       final str = ''; // coverage:ignore-end
       final str = ''; // coverage:ignore-file
@@ -238,7 +238,7 @@ void main() {
       ]);
     });
 
-    test('Ingore comments have no effect inside string literals', () {
+    test('ignore comments have no effect inside string literals', () {
       final lines = '''
       final str = '// coverage:ignore-file';
       final str = '// coverage:ignore-line';
@@ -253,7 +253,7 @@ void main() {
       ]);
     });
 
-    test('Allow white-space after ignore comments', () {
+    test('allow white-space after ignore comments', () {
       // Using multiple strings, rather than splitting a multi-line string,
       // because many code editors remove trailing white-space.
       final lines = [

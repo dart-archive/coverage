@@ -1,4 +1,4 @@
-## Current
+## 1.6.4-wip.
 
 - allow omitting space between `//` and `coverage` in coverage ignore comments
 - allow text after coverage ignore comments

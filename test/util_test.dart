@@ -177,11 +177,51 @@ void main() {
     ];
 
     test('throws FormatException when the annotations are not balanced', () {
-      for (final content in invalidSources) {
+      for (var i = 0; i < invalidSources.length; ++i) {
+        late String errMsg;
+        switch (i) {
+          case 0:
+            errMsg = 'coverage:ignore-start found at content-0.dart:3'
+                ' before previous coverage:ignore-start ended';
+            break;
+          case 1:
+            errMsg = 'coverage:ignore-start found at content-1.dart:3'
+                ' before previous coverage:ignore-start ended';
+            break;
+          case 2:
+            errMsg = 'unmatched coverage:ignore-end found at content-2.dart:5';
+            break;
+          case 3:
+            errMsg = 'unmatched coverage:ignore-end found at content-3.dart:1';
+            break;
+          case 4:
+            errMsg = 'unmatched coverage:ignore-end found at content-4.dart:1';
+            break;
+          case 5:
+            errMsg = 'unmatched coverage:ignore-end found at content-5.dart:1';
+            break;
+          case 6:
+            errMsg = 'unmatched coverage:ignore-end found at content-6.dart:1';
+            break;
+          case 7:
+            errMsg =
+                'coverage:ignore-start found at content-7.dart:1 has no matching'
+                ' coverage:ignore-end';
+            break;
+          default:
+            throw UnimplementedError('expectation for not balanced case $i');
+        }
+
+        final content = invalidSources[i].split('\n');
         expect(
-          () => getIgnoredLines(content.split('\n')),
-          throwsFormatException,
-          reason: content,
+          () => getIgnoredLines('content-$i.dart', content),
+          throwsA(
+            allOf(
+              isFormatException,
+              predicate((FormatException e) => e.message == errMsg),
+            ),
+          ),
+          reason: 'expected FormatException with message "$errMsg"',
         );
       }
     });
@@ -192,7 +232,7 @@ void main() {
       for (final content in invalidSources) {
         final lines = content.split('\n');
         lines.add(' // coverage:ignore-file');
-        expect(getIgnoredLines(lines), [
+        expect(getIgnoredLines('', lines), [
           [0, lines.length]
         ]);
       }
@@ -205,7 +245,7 @@ void main() {
       '''
           .split('\n');
 
-      expect(getIgnoredLines(lines), [
+      expect(getIgnoredLines('', lines), [
         [0, lines.length]
       ]);
     });
@@ -221,7 +261,7 @@ void main() {
       '''
           .split('\n');
 
-      expect(getIgnoredLines(lines), [
+      expect(getIgnoredLines('', lines), [
         [1, 3],
         [4, 6],
       ]);
@@ -235,7 +275,7 @@ void main() {
       '''
           .split('\n');
 
-      expect(getIgnoredLines(lines), [
+      expect(getIgnoredLines('', lines), [
         [1, 1],
         [2, 2],
         [3, 3],
@@ -252,7 +292,7 @@ void main() {
       '''
           .split('\n');
 
-      expect(getIgnoredLines(lines), [
+      expect(getIgnoredLines('', lines), [
         [3, 3],
       ]);
     });
@@ -269,7 +309,7 @@ void main() {
         "final str = ''; // coverage:ignore-end  \t    \t ",
       ];
 
-      expect(getIgnoredLines(lines), [
+      expect(getIgnoredLines('', lines), [
         [1, 3],
         [4, 4],
         [5, 6],
@@ -286,7 +326,7 @@ void main() {
         "final str = ''; //coverage:ignore-end",
       ];
 
-      expect(getIgnoredLines(lines), [
+      expect(getIgnoredLines('', lines), [
         [1, 3],
         [4, 4],
         [5, 6],
@@ -303,7 +343,7 @@ void main() {
         "final str = ''; // coverage:ignore-end it is done",
       ];
 
-      expect(getIgnoredLines(lines), [
+      expect(getIgnoredLines('', lines), [
         [1, 3],
         [4, 4],
         [5, 6],

@@ -100,7 +100,7 @@ final ignoreFile = RegExp(r'//\s*coverage:ignore-file[\w\d\s]*$');
 /// ]
 /// ```
 ///
-List<List<int>> getIgnoredLines(List<String>? lines) {
+List<List<int>> getIgnoredLines(String filePath, List<String>? lines) {
   final ignoredLines = <List<int>>[];
   if (lines == null) return ignoredLines;
 
@@ -115,7 +115,7 @@ List<List<int>> getIgnoredLines(List<String>? lines) {
 
     if (lines[i].contains(muliLineIgnoreEnd)) {
       err ??= FormatException(
-        'unmatched coverage:ignore-end found on line ${i + 1}',
+        'unmatched coverage:ignore-end found at $filePath:${i + 1}',
       );
     }
 
@@ -129,7 +129,7 @@ List<List<int>> getIgnoredLines(List<String>? lines) {
         if (lines[i].contains(ignoreFile)) return allLines;
         if (lines[i].contains(muliLineIgnoreStart)) {
           err ??= FormatException(
-            'coverage:ignore-start found on line ${i + 1}'
+            'coverage:ignore-start found at $filePath:${i + 1}'
             ' before previous coverage:ignore-start ended',
           );
           break;
@@ -145,7 +145,7 @@ List<List<int>> getIgnoredLines(List<String>? lines) {
 
       if (isUnmatched) {
         err ??= FormatException(
-          'coverage:ignore-start found on line ${start + 1}'
+          'coverage:ignore-start found at $filePath:${start + 1}'
           ' has no matching coverage:ignore-end',
         );
       }

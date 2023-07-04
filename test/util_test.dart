@@ -177,44 +177,10 @@ void main() {
     ];
 
     test('throws FormatException when the annotations are not balanced', () {
-      for (var i = 0; i < invalidSources.length; ++i) {
-        late String errMsg;
-        switch (i) {
-          case 0:
-            errMsg = 'coverage:ignore-start found at content-0.dart:3'
-                ' before previous coverage:ignore-start ended';
-            break;
-          case 1:
-            errMsg = 'coverage:ignore-start found at content-1.dart:3'
-                ' before previous coverage:ignore-start ended';
-            break;
-          case 2:
-            errMsg = 'unmatched coverage:ignore-end found at content-2.dart:5';
-            break;
-          case 3:
-            errMsg = 'unmatched coverage:ignore-end found at content-3.dart:1';
-            break;
-          case 4:
-            errMsg = 'unmatched coverage:ignore-end found at content-4.dart:1';
-            break;
-          case 5:
-            errMsg = 'unmatched coverage:ignore-end found at content-5.dart:1';
-            break;
-          case 6:
-            errMsg = 'unmatched coverage:ignore-end found at content-6.dart:1';
-            break;
-          case 7:
-            errMsg =
-                'coverage:ignore-start found at content-7.dart:1 has no matching'
-                ' coverage:ignore-end';
-            break;
-          default:
-            throw UnimplementedError('expectation for not balanced case $i');
-        }
-
-        final content = invalidSources[i].split('\n');
+      void runTest(int index, String errMsg) {
+        final content = invalidSources[index].split('\n');
         expect(
-          () => getIgnoredLines('content-$i.dart', content),
+          () => getIgnoredLines('content-$index.dart', content),
           throwsA(
             allOf(
               isFormatException,
@@ -224,6 +190,39 @@ void main() {
           reason: 'expected FormatException with message "$errMsg"',
         );
       }
+
+      runTest(
+        0,
+        'coverage:ignore-start found at content-0.dart:3 before previous coverage:ignore-start ended',
+      );
+      runTest(
+        1,
+        'coverage:ignore-start found at content-1.dart:3 before previous coverage:ignore-start ended',
+      );
+      runTest(
+        2,
+        'unmatched coverage:ignore-end found at content-2.dart:5',
+      );
+      runTest(
+        3,
+        'unmatched coverage:ignore-end found at content-3.dart:1',
+      );
+      runTest(
+        4,
+        'unmatched coverage:ignore-end found at content-4.dart:1',
+      );
+      runTest(
+        5,
+        'unmatched coverage:ignore-end found at content-5.dart:1',
+      );
+      runTest(
+        6,
+        'unmatched coverage:ignore-end found at content-6.dart:1',
+      );
+      runTest(
+        7,
+        'coverage:ignore-start found at content-7.dart:1 has no matching coverage:ignore-end',
+      );
     });
 
     test(

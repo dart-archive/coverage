@@ -24,6 +24,9 @@ dev_dependencies:
   test_descriptor: ^2.0.0
   test_process: ^2.0.0
 
+dependency_overrides:
+  vm_service: 12.0.0
+
 executables:
   collect_coverage:
   format_coverage:

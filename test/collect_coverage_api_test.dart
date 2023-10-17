@@ -98,7 +98,8 @@ void main() {
 
   test('collect_coverage_api with coverableLineCache', () async {
     final coverableLineCache = <String, Set<int>>{};
-    final coverage = await _collectCoverage(coverableLineCache: coverableLineCache);
+    final coverage =
+        await _collectCoverage(coverableLineCache: coverableLineCache);
 
     print(coverage);
     print(coverableLineCache);

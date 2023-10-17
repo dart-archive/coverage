@@ -1,7 +1,7 @@
 ## 1.7.0
 
 - Require Dart 3.0.0
-- Update `package:vm_service` constraints to '>=12.0.0 <13.0.0'.
+- Update `package:vm_service` constraints to '^12.0.0'.
 - Add `coverableLineCache` parameter to `collect`. This allows the set of
   coverable lines to be cached between calls to `collect`, avoiding the need to
   force compile the same libraries repeatedly. This is only useful when running

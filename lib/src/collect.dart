@@ -372,10 +372,8 @@ Future<List<Map<String, dynamic>>> _processSourceReport(
     // the lines that don't have a hit. Afterwards, add all the lines that were
     // hit or missed to the cache, so that the next coverage collection won't
     // need to compile this libarry.
-    Set<int>? coverableLines;
-    if (coverableLineCache != null) {
-      coverableLines = coverableLineCache[scriptUriString] ??= <int>{};
-    }
+    final coverableLines =
+        coverableLineCache?.putIfAbsent(scriptUriString, () => <int>{});
 
     // Not returned in scripts section of source report.
     if (scriptUri.scheme == 'evaluate') continue;

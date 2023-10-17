@@ -95,13 +95,23 @@ void main() {
     expect(sources[_isolateLibFileUri],
         everyElement(containsPair('branchHits', isNotEmpty)));
   }, skip: !platformVersionCheck(2, 17));
+
+  test('collect_coverage_api with coverableLineCache', () async {
+    final coverableLineCache = <String, Set<int>>{};
+    final coverage = await _collectCoverage(coverableLineCache: coverableLineCache);
+
+    print(coverage);
+    print(coverableLineCache);
+    expect(false, true);
+  }, skip: !platformVersionCheck(3, 2));
 }
 
 Future<Map<String, dynamic>> _collectCoverage(
     {Set<String> scopedOutput = const {},
     bool isolateIds = false,
     bool functionCoverage = false,
-    bool branchCoverage = false}) async {
+    bool branchCoverage = false,
+    Map<String, Set<int>>? coverableLineCache}) async {
   final openPort = await getOpenPort();
 
   // run the sample app, with the right flags

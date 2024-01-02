@@ -87,7 +87,7 @@ coverage will also be output.
   lines inclusive.
 - `// coverage:ignore-file` to ignore the whole file.
 
-When using `format_coverage`, need to specify `--check-ignore` at the same time.
+Then pass `--check-ignore` to `format_coverage`.
 
 #### Function and branch coverage
 

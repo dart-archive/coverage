@@ -1,4 +1,4 @@
-## 1.7.3
+## 1.8.0
 
 - Copy collect_coverage's `--scope-output` flag to test_with_coverage.
 

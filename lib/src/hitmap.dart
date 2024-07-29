@@ -78,16 +78,9 @@ class HitMap {
         } else {
           final path = resolver.resolve(source);
           if (path != null) {
-            var ignoreByGlob = false;
-            for (final glob in ignoreGlobs) {
-              if (glob.matches(source)) {
-                // Null-entry indicates that the whole file was ignored.
-                ignoredLinesInFilesCache[source] = null;
-                ignoreByGlob = true;
-                break;
-              }
-            }
-            if (ignoreByGlob) {
+            if (ignoreGlobs.any((glob) => glob.matches(source))) {
+              // Null-entry indicates that the whole file was ignored.
+              ignoredLinesInFilesCache[source] = null;
               continue;
             }
 

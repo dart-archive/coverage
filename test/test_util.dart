@@ -10,6 +10,8 @@ import 'package:test/test.dart';
 import 'package:test_process/test_process.dart';
 
 final String testAppPath = p.join('test', 'test_files', 'test_app.dart');
+final String testAppGeneratedPath =
+    p.join('test', 'test_files', 'test_app.g.dart');
 
 const Duration timeout = Duration(seconds: 20);
 

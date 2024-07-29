@@ -5,6 +5,8 @@
 import 'dart:convert' show json;
 import 'dart:io';
 
+import 'package:glob/glob.dart';
+
 import 'resolver.dart';
 import 'util.dart';
 
@@ -47,6 +49,7 @@ class HitMap {
   static Map<String, HitMap> parseJsonSync(
     List<Map<String, dynamic>> jsonResult, {
     required bool checkIgnoredLines,
+    required Set<Glob> ignoreGlobs,
     required Map<String, List<List<int>>?> ignoredLinesInFilesCache,
     required Resolver resolver,
   }) {
@@ -75,6 +78,19 @@ class HitMap {
         } else {
           final path = resolver.resolve(source);
           if (path != null) {
+            var ignoreByGlob = false;
+            for (final glob in ignoreGlobs) {
+              if (glob.matches(source)) {
+                // Null-entry indicates that the whole file was ignored.
+                ignoredLinesInFilesCache[source] = null;
+                ignoreByGlob = true;
+                break;
+              }
+            }
+            if (ignoreByGlob) {
+              continue;
+            }
+
             final lines = loader.loadSync(path) ?? [];
             ignoredLinesList = getIgnoredLines(path, lines);
 
@@ -185,6 +201,7 @@ class HitMap {
   static Future<Map<String, HitMap>> parseJson(
     List<Map<String, dynamic>> jsonResult, {
     bool checkIgnoredLines = false,
+    Set<Glob>? ignoreGlobs,
     @Deprecated('Use packagePath') String? packagesPath,
     String? packagePath,
   }) async {
@@ -192,6 +209,7 @@ class HitMap {
         packagesPath: packagesPath, packagePath: packagePath);
     return parseJsonSync(jsonResult,
         checkIgnoredLines: checkIgnoredLines,
+        ignoreGlobs: ignoreGlobs ?? {},
         ignoredLinesInFilesCache: {},
         resolver: resolver);
   }
@@ -200,6 +218,7 @@ class HitMap {
   static Future<Map<String, HitMap>> parseFiles(
     Iterable<File> files, {
     bool checkIgnoredLines = false,
+    List<String>? ignoreGlobs,
     @Deprecated('Use packagePath') String? packagesPath,
     String? packagePath,
   }) async {
@@ -212,6 +231,7 @@ class HitMap {
         globalHitmap.merge(await HitMap.parseJson(
           jsonResult.cast<Map<String, dynamic>>(),
           checkIgnoredLines: checkIgnoredLines,
+          ignoreGlobs: ignoreGlobs?.map(Glob.new).toSet() ?? {},
           // ignore: deprecated_member_use_from_same_package
           packagesPath: packagesPath,
           packagePath: packagePath,

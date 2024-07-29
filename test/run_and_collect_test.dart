@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:coverage/coverage.dart';
+import 'package:glob/glob.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -11,6 +12,8 @@ import 'test_util.dart';
 final _isolateLibPath = p.join('test', 'test_files', 'test_app_isolate.dart');
 
 final _sampleAppFileUri = p.toUri(p.absolute(testAppPath)).toString();
+final _sampleGeneratedAppFileUri =
+    p.toUri(p.absolute(testAppGeneratedPath)).toString();
 final _isolateLibFileUri = p.toUri(p.absolute(_isolateLibPath)).toString();
 
 void main() {
@@ -29,12 +32,21 @@ void main() {
       expect(sampleCoverageData['hits'], isNotEmpty);
     }
 
-    final hitMap = await HitMap.parseJson(coverage, checkIgnoredLines: true);
+    final ignoreGlobs = {
+      Glob('**/*.g.dart'),
+    };
+
+    final hitMap = await HitMap.parseJson(
+      coverage,
+      checkIgnoredLines: true,
+      ignoreGlobs: ignoreGlobs,
+    );
     checkHitmap(hitMap);
     final resolver = await Resolver.create();
     final ignoredLinesInFilesCache = <String, List<List<int>>?>{};
     final hitMap2 = HitMap.parseJsonSync(coverage,
         checkIgnoredLines: true,
+        ignoreGlobs: ignoreGlobs,
         ignoredLinesInFilesCache: ignoredLinesInFilesCache,
         resolver: resolver);
     checkHitmap(hitMap2);
@@ -44,6 +56,7 @@ void main() {
     // so providing a resolver that throws when asked for files should be ok.
     final hitMap3 = HitMap.parseJsonSync(coverage,
         checkIgnoredLines: true,
+        ignoreGlobs: ignoreGlobs,
         ignoredLinesInFilesCache: ignoredLinesInFilesCache,
         resolver: ThrowingResolver());
     checkHitmap(hitMap3);
@@ -73,7 +86,7 @@ class ThrowingResolver implements Resolver {
 
 void checkIgnoredLinesInFilesCache(
     Map<String, List<List<int>>?> ignoredLinesInFilesCache) {
-  expect(ignoredLinesInFilesCache.length, 3);
+  expect(ignoredLinesInFilesCache.length, 4);
   final keys = ignoredLinesInFilesCache.keys.toList();
   final testAppKey =
       keys.where((element) => element.endsWith('test_app.dart')).single;
@@ -94,6 +107,7 @@ void checkIgnoredLinesInFilesCache(
 
 void checkHitmap(Map<String, HitMap> hitMap) {
   expect(hitMap, isNot(contains(_sampleAppFileUri)));
+  expect(hitMap, isNot(contains(_sampleGeneratedAppFileUri)));
 
   final actualHitMap = hitMap[_isolateLibFileUri];
   final actualLineHits = actualHitMap?.lineHits;

@@ -24,6 +24,7 @@ class Environment {
     required this.prettyPrintFunc,
     required this.prettyPrintBranch,
     required this.reportOn,
+    required this.ignoreFiles,
     required this.sdkRoot,
     required this.verbose,
     required this.workers,
@@ -42,6 +43,7 @@ class Environment {
   bool prettyPrintFunc;
   bool prettyPrintBranch;
   List<String>? reportOn;
+  List<String>? ignoreFiles;
   String? sdkRoot;
   bool verbose;
   int workers;
@@ -66,6 +68,7 @@ Future<void> main(List<String> arguments) async {
   final hitmap = await HitMap.parseFiles(
     files,
     checkIgnoredLines: env.checkIgnore,
+    ignoreGlobs: env.ignoreFiles,
     // ignore: deprecated_member_use_from_same_package
     packagesPath: env.packagesPath,
     packagePath: env.packagePath,
@@ -124,50 +127,54 @@ Future<void> main(List<String> arguments) async {
 Environment parseArgs(List<String> arguments) {
   final parser = ArgParser();
 
-  parser.addOption('sdk-root', abbr: 's', help: 'path to the SDK root');
-  parser.addOption('packages',
-      help: '[DEPRECATED] path to the package spec file');
-  parser.addOption('package',
-      help: 'root directory of the package', defaultsTo: '.');
-  parser.addOption('in', abbr: 'i', help: 'input(s): may be file or directory');
-  parser.addOption('out',
-      abbr: 'o', defaultsTo: 'stdout', help: 'output: may be file or stdout');
-  parser.addMultiOption('report-on',
-      help: 'which directories or files to report coverage on');
-  parser.addOption('workers',
-      abbr: 'j', defaultsTo: '1', help: 'number of workers');
-  parser.addOption('bazel-workspace',
-      defaultsTo: '', help: 'Bazel workspace directory');
-  parser.addOption('base-directory',
-      abbr: 'b',
-      help: 'the base directory relative to which source paths are output');
-  parser.addFlag('bazel',
-      defaultsTo: false, help: 'use Bazel-style path resolution');
-  parser.addFlag('pretty-print',
-      abbr: 'r',
+  parser
+    ..addOption('sdk-root', abbr: 's', help: 'path to the SDK root')
+    ..addOption('packages', help: '[DEPRECATED] path to the package spec file')
+    ..addOption('package',
+        help: 'root directory of the package', defaultsTo: '.')
+    ..addOption('in', abbr: 'i', help: 'input(s): may be file or directory')
+    ..addOption('out',
+        abbr: 'o', defaultsTo: 'stdout', help: 'output: may be file or stdout')
+    ..addMultiOption('report-on',
+        help: 'which directories or files to report coverage on')
+    ..addOption('workers',
+        abbr: 'j', defaultsTo: '1', help: 'number of workers')
+    ..addOption('bazel-workspace',
+        defaultsTo: '', help: 'Bazel workspace directory')
+    ..addOption('base-directory',
+        abbr: 'b',
+        help: 'the base directory relative to which source paths are output')
+    ..addFlag('bazel',
+        defaultsTo: false, help: 'use Bazel-style path resolution')
+    ..addFlag('pretty-print',
+        abbr: 'r',
+        negatable: false,
+        help: 'convert line coverage data to pretty print format')
+    ..addFlag('pretty-print-func',
+        abbr: 'f',
+        negatable: false,
+        help: 'convert function coverage data to pretty print format')
+    ..addFlag('pretty-print-branch',
+        negatable: false,
+        help: 'convert branch coverage data to pretty print format')
+    ..addFlag('lcov',
+        abbr: 'l',
+        negatable: false,
+        help: 'convert coverage data to lcov format')
+    ..addFlag('verbose', abbr: 'v', negatable: false, help: 'verbose output')
+    ..addFlag(
+      'check-ignore',
+      abbr: 'c',
       negatable: false,
-      help: 'convert line coverage data to pretty print format');
-  parser.addFlag('pretty-print-func',
-      abbr: 'f',
-      negatable: false,
-      help: 'convert function coverage data to pretty print format');
-  parser.addFlag('pretty-print-branch',
-      negatable: false,
-      help: 'convert branch coverage data to pretty print format');
-  parser.addFlag('lcov',
-      abbr: 'l',
-      negatable: false,
-      help: 'convert coverage data to lcov format');
-  parser.addFlag('verbose',
-      abbr: 'v', negatable: false, help: 'verbose output');
-  parser.addFlag(
-    'check-ignore',
-    abbr: 'c',
-    negatable: false,
-    help: 'check for coverage ignore comments.'
-        ' Not supported in web coverage.',
-  );
-  parser.addFlag('help', abbr: 'h', negatable: false, help: 'show this help');
+      help: 'check for coverage ignore comments.'
+          ' Not supported in web coverage.',
+    )
+    ..addMultiOption(
+      'ignore-files',
+      defaultsTo: [],
+      help: 'Ignore files by glob patterns',
+    )
+    ..addFlag('help', abbr: 'h', negatable: false, help: 'show this help');
 
   final args = parser.parse(arguments);
 
@@ -261,6 +268,7 @@ Environment parseArgs(List<String> arguments) {
   }
 
   final checkIgnore = args['check-ignore'] as bool;
+  final ignoredGlobs = args['ignore-files'] as List<String>;
   final verbose = args['verbose'] as bool;
   return Environment(
       baseDirectory: baseDirectory,
@@ -276,6 +284,7 @@ Environment parseArgs(List<String> arguments) {
       prettyPrintFunc: prettyPrintFunc,
       prettyPrintBranch: prettyPrintBranch,
       reportOn: reportOn,
+      ignoreFiles: ignoredGlobs,
       sdkRoot: sdkRoot,
       verbose: verbose,
       workers: workers);

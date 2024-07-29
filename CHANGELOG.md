@@ -1,6 +1,7 @@
 ## 1.8.1-wip
 
 - Require Dart ^3.4
+- Add --ignore-files option allowing to exclude files from coverage reports using glob patterns
 
 ## 1.8.0
 

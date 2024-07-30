@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:coverage/coverage.dart';
+import 'package:glob/glob.dart';
 import 'package:path/path.dart' as p;
 
 /// [Environment] stores gathered arguments information.
@@ -68,7 +69,6 @@ Future<void> main(List<String> arguments) async {
   final hitmap = await HitMap.parseFiles(
     files,
     checkIgnoredLines: env.checkIgnore,
-    ignoreGlobs: env.ignoreFiles,
     // ignore: deprecated_member_use_from_same_package
     packagesPath: env.packagesPath,
     packagePath: env.packagePath,
@@ -78,6 +78,8 @@ Future<void> main(List<String> arguments) async {
   if (env.verbose) {
     print('Done creating global hitmap. Took ${clock.elapsedMilliseconds} ms.');
   }
+
+  final ignoreGlobs = env.ignoreFiles?.map(Glob.new).toSet();
 
   String output;
   final resolver = env.bazel
@@ -91,12 +93,15 @@ Future<void> main(List<String> arguments) async {
   if (env.prettyPrint) {
     output = await hitmap.prettyPrint(resolver, loader,
         reportOn: env.reportOn,
+        ignoreGlobs: ignoreGlobs,
         reportFuncs: env.prettyPrintFunc,
         reportBranches: env.prettyPrintBranch);
   } else {
     assert(env.lcov);
     output = hitmap.formatLcov(resolver,
-        reportOn: env.reportOn, basePath: env.baseDirectory);
+        reportOn: env.reportOn,
+        ignoreGlobs: ignoreGlobs,
+        basePath: env.baseDirectory);
   }
 
   env.output.write(output);

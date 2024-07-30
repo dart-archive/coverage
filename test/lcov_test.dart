@@ -7,11 +7,13 @@ import 'dart:io';
 
 import 'package:coverage/coverage.dart';
 import 'package:coverage/src/util.dart';
+import 'package:glob/glob.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:test_process/test_process.dart';
 
 final _sampleAppPath = p.join('test', 'test_files', 'test_app.dart');
+final _sampleGeneratedPath = p.join('test', 'test_files', 'test_app.g.dart');
 final _isolateLibPath = p.join('test', 'test_files', 'test_app_isolate.dart');
 
 final _sampleAppFileUri = p.toUri(p.absolute(_sampleAppPath)).toString();
@@ -122,6 +124,37 @@ void main() {
       expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
     });
 
+    test('formatLcov() excludes files matching glob patterns', () async {
+      final hitmap = await _getHitMap();
+
+      final resolver = await Resolver.create(packagePath: '.');
+      final res = hitmap.formatLcov(
+        resolver,
+        ignoreGlobs: {Glob('**/*.g.dart'), Glob('**/util.dart')},
+      );
+
+      expect(res, isNot(contains(p.absolute(_sampleGeneratedPath))));
+      expect(
+        res,
+        isNot(contains(p.absolute(p.join('lib', 'src', 'util.dart')))),
+      );
+    });
+
+    test(
+        'formatLcov() excludes files matching glob patterns regardless of their'
+        'presence on reportOn list', () async {
+      final hitmap = await _getHitMap();
+
+      final resolver = await Resolver.create(packagePath: '.');
+      final res = hitmap.formatLcov(
+        resolver,
+        reportOn: ['test/'],
+        ignoreGlobs: {Glob('**/*.g.dart')},
+      );
+
+      expect(res, isNot(contains(p.absolute(_sampleGeneratedPath))));
+    });
+
     test('formatLcov() uses paths relative to basePath', () async {
       final hitmap = await _getHitMap();
 
@@ -207,6 +240,39 @@ void main() {
       expect(res, isNot(contains(p.absolute(_sampleAppPath))));
       expect(res, isNot(contains(p.absolute(_isolateLibPath))));
       expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
+    });
+
+    test('prettyPrint() excludes files matching glob patterns', () async {
+      final hitmap = await _getHitMap();
+
+      final resolver = await Resolver.create(packagePath: '.');
+      final res = await hitmap.prettyPrint(
+        resolver,
+        Loader(),
+        ignoreGlobs: {Glob('**/*.g.dart'), Glob('**/util.dart')},
+      );
+
+      expect(res, isNot(contains(p.absolute(_sampleGeneratedPath))));
+      expect(
+        res,
+        isNot(contains(p.absolute(p.join('lib', 'src', 'util.dart')))),
+      );
+    });
+
+    test(
+        'prettyPrint() excludes files matching glob patterns regardless of their'
+        'presence on reportOn list', () async {
+      final hitmap = await _getHitMap();
+
+      final resolver = await Resolver.create(packagePath: '.');
+      final res = await hitmap.prettyPrint(
+        resolver,
+        Loader(),
+        reportOn: ['test/'],
+        ignoreGlobs: {Glob('**/*.g.dart')},
+      );
+
+      expect(res, isNot(contains(p.absolute(_sampleGeneratedPath))));
     });
 
     test('prettyPrint() functions', () async {

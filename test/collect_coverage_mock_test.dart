@@ -628,5 +628,52 @@ void main() {
         'package:baz/baz.dart': {36, 81},
       });
     });
+
+
+    test('Collect coverage, scoped output, library filters, '
+          'handles SourceReports that contain unfiltered ranges', () async {
+      // Regression test for https://github.com/dart-lang/coverage/issues/495
+      final service = _mockService(3, 57);
+      when(service.getSourceReport('isolate', ['Coverage'],
+              forceCompile: true,
+              reportLines: true,
+              libraryFilters: ['package:foo/']))
+          .thenAnswer((_) async => SourceReport(
+                ranges: [
+                  _range(
+                    0,
+                    SourceReportCoverage(
+                      hits: [12],
+                      misses: [47],
+                    ),
+                  ),
+                  _range(
+                    1,
+                    SourceReportCoverage(
+                      hits: [86],
+                      misses: [91],
+                    ),
+                  ),
+                ],
+                scripts: [
+                  ScriptRef(
+                    uri: 'package:foo/foo.dart',
+                    id: 'foo',
+                  ),
+                  ScriptRef(
+                    uri: 'package:bar/bar.dart',
+                    id: 'bar',
+                  ),
+                ],
+              ));
+
+      final jsonResult = await collect(Uri(), false, false, false, {'foo'},
+          serviceOverrideForTesting: service);
+      final result = await HitMap.parseJson(
+          jsonResult['coverage'] as List<Map<String, dynamic>>);
+
+      expect(result.length, 1);
+      expect(result['package:foo/foo.dart']?.lineHits, {12: 1, 47: 0});
+    });
   });
 }

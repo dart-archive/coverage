@@ -507,10 +507,15 @@ class StdoutLog extends Log {
 extension _ScopedOutput on Set<String> {
   bool includesScript(String? scriptUriString) {
     if (scriptUriString == null) return false;
+
+    // If the set is empty, it means the user didn't specify a --scope-output
+    // flag, so allow everything.
     if (isEmpty) return true;
+
     final scriptUri = Uri.parse(scriptUriString);
     if (scriptUri.scheme != 'package') return false;
-    final scope = scriptUri.path.split('/').first;
+
+    final scope = scriptUri.pathSegments.first;
     return contains(scope);
   }
 }

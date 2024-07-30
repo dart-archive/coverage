@@ -260,8 +260,8 @@ void main() {
     });
 
     test(
-        'prettyPrint() excludes files matching glob patterns regardless of their'
-        'presence on reportOn list', () async {
+        'prettyPrint() excludes files matching glob patterns regardless of'
+        'their presence on reportOn list', () async {
       final hitmap = await _getHitMap();
 
       final resolver = await Resolver.create(packagePath: '.');

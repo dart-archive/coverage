@@ -367,7 +367,7 @@ Future<List<Map<String, dynamic>>> _processSourceReport(
       // Sometimes a range's script can be different to the function's script
       // (eg mixins), so we have to re-check the scope filter.
       // See https://github.com/dart-lang/coverage/issues/495
-      // continue;
+      continue;
     }
     final scriptUri = Uri.parse(scriptUriString!);
 

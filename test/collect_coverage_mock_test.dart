@@ -629,9 +629,9 @@ void main() {
       });
     });
 
-
-    test('Collect coverage, scoped output, library filters, '
-          'handles SourceReports that contain unfiltered ranges', () async {
+    test(
+        'Collect coverage, scoped output, library filters, '
+        'handles SourceReports that contain unfiltered ranges', () async {
       // Regression test for https://github.com/dart-lang/coverage/issues/495
       final service = _mockService(3, 57);
       when(service.getSourceReport('isolate', ['Coverage'],

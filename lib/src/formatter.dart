@@ -207,13 +207,15 @@ _PathFilter _getPathFilter({List<String>? reportOn, Set<Glob>? ignoreGlobs}) {
   final absolutePaths = reportOn?.map(p.canonicalize).toList();
 
   return (String path) {
+    final canonicalizedPath = p.canonicalize(path);
+
     if (absolutePaths != null) {
-      if (!absolutePaths.any((item) => p.canonicalize(path).startsWith(item))) {
+      if (!absolutePaths.any(canonicalizedPath.startsWith)) {
         return false;
       }
     }
     if (ignoreGlobs != null) {
-      if (ignoreGlobs.any((glob) => glob.matches(path))) {
+      if (ignoreGlobs.any((glob) => glob.matches(canonicalizedPath))) {
         return false;
       }
     }

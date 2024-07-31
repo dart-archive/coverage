@@ -17,6 +17,8 @@ final _sampleGeneratedPath = p.join('test', 'test_files', 'test_app.g.dart');
 final _isolateLibPath = p.join('test', 'test_files', 'test_app_isolate.dart');
 
 final _sampleAppFileUri = p.toUri(p.absolute(_sampleAppPath)).toString();
+final _sampleGeneratedFileUri =
+    p.toUri(p.absolute(_sampleGeneratedPath)).toString();
 final _isolateLibFileUri = p.toUri(p.absolute(_isolateLibPath)).toString();
 
 void main() {
@@ -24,6 +26,7 @@ void main() {
     final hitmap = await _getHitMap();
 
     expect(hitmap, contains(_sampleAppFileUri));
+    expect(hitmap, contains(_sampleGeneratedFileUri));
     expect(hitmap, contains(_isolateLibFileUri));
     expect(hitmap, contains('package:coverage/src/util.dart'));
 
@@ -53,6 +56,7 @@ void main() {
     final hitmap = await _getHitMap();
 
     expect(hitmap, contains(_sampleAppFileUri));
+    expect(hitmap, contains(_sampleGeneratedFileUri));
     expect(hitmap, contains(_isolateLibFileUri));
     expect(hitmap, contains('package:coverage/src/util.dart'));
 
@@ -87,6 +91,7 @@ void main() {
           .format(hitmap.map((key, value) => MapEntry(key, value.lineHits)));
 
       expect(res, contains(p.absolute(_sampleAppPath)));
+      expect(res, contains(p.absolute(_sampleGeneratedPath)));
       expect(res, contains(p.absolute(_isolateLibPath)));
       expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
     });
@@ -98,6 +103,7 @@ void main() {
       final res = hitmap.formatLcov(resolver);
 
       expect(res, contains(p.absolute(_sampleAppPath)));
+      expect(res, contains(p.absolute(_sampleGeneratedPath)));
       expect(res, contains(p.absolute(_isolateLibPath)));
       expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
     });
@@ -109,6 +115,7 @@ void main() {
       final res = hitmap.formatLcov(resolver, reportOn: ['lib/', 'test/']);
 
       expect(res, contains(p.absolute(_sampleAppPath)));
+      expect(res, contains(p.absolute(_sampleGeneratedPath)));
       expect(res, contains(p.absolute(_isolateLibPath)));
       expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
     });
@@ -120,6 +127,7 @@ void main() {
       final res = hitmap.formatLcov(resolver, reportOn: ['lib/']);
 
       expect(res, isNot(contains(p.absolute(_sampleAppPath))));
+      expect(res, isNot(contains(p.absolute(_sampleGeneratedPath))));
       expect(res, isNot(contains(p.absolute(_isolateLibPath))));
       expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
     });
@@ -133,7 +141,9 @@ void main() {
         ignoreGlobs: {Glob('**/*.g.dart'), Glob('**/util.dart')},
       );
 
+      expect(res, contains(p.absolute(_sampleAppPath)));
       expect(res, isNot(contains(p.absolute(_sampleGeneratedPath))));
+      expect(res, contains(p.absolute(_isolateLibPath)));
       expect(
         res,
         isNot(contains(p.absolute(p.join('lib', 'src', 'util.dart')))),
@@ -152,7 +162,9 @@ void main() {
         ignoreGlobs: {Glob('**/*.g.dart')},
       );
 
+      expect(res, contains(p.absolute(_sampleAppPath)));
       expect(res, isNot(contains(p.absolute(_sampleGeneratedPath))));
+      expect(res, contains(p.absolute(_isolateLibPath)));
     });
 
     test('formatLcov() uses paths relative to basePath', () async {
@@ -179,6 +191,7 @@ void main() {
           .format(hitmap.map((key, value) => MapEntry(key, value.lineHits)));
 
       expect(res, contains(p.absolute(_sampleAppPath)));
+      expect(res, contains(p.absolute(_sampleGeneratedPath)));
       expect(res, contains(p.absolute(_isolateLibPath)));
       expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
 
@@ -202,6 +215,7 @@ void main() {
       final res = await hitmap.prettyPrint(resolver, Loader());
 
       expect(res, contains(p.absolute(_sampleAppPath)));
+      expect(res, contains(p.absolute(_sampleGeneratedPath)));
       expect(res, contains(p.absolute(_isolateLibPath)));
       expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
 
@@ -226,6 +240,7 @@ void main() {
           .prettyPrint(resolver, Loader(), reportOn: ['lib/', 'test/']);
 
       expect(res, contains(p.absolute(_sampleAppPath)));
+      expect(res, contains(p.absolute(_sampleGeneratedPath)));
       expect(res, contains(p.absolute(_isolateLibPath)));
       expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
     });
@@ -238,6 +253,7 @@ void main() {
           await hitmap.prettyPrint(resolver, Loader(), reportOn: ['lib/']);
 
       expect(res, isNot(contains(p.absolute(_sampleAppPath))));
+      expect(res, isNot(contains(p.absolute(_sampleGeneratedPath))));
       expect(res, isNot(contains(p.absolute(_isolateLibPath))));
       expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
     });
@@ -252,7 +268,9 @@ void main() {
         ignoreGlobs: {Glob('**/*.g.dart'), Glob('**/util.dart')},
       );
 
+      expect(res, contains(p.absolute(_sampleAppPath)));
       expect(res, isNot(contains(p.absolute(_sampleGeneratedPath))));
+      expect(res, contains(p.absolute(_isolateLibPath)));
       expect(
         res,
         isNot(contains(p.absolute(p.join('lib', 'src', 'util.dart')))),
@@ -272,7 +290,9 @@ void main() {
         ignoreGlobs: {Glob('**/*.g.dart')},
       );
 
+      expect(res, contains(p.absolute(_sampleAppPath)));
       expect(res, isNot(contains(p.absolute(_sampleGeneratedPath))));
+      expect(res, contains(p.absolute(_isolateLibPath)));
     });
 
     test('prettyPrint() functions', () async {
@@ -283,6 +303,7 @@ void main() {
           await hitmap.prettyPrint(resolver, Loader(), reportFuncs: true);
 
       expect(res, contains(p.absolute(_sampleAppPath)));
+      expect(res, contains(p.absolute(_sampleGeneratedPath)));
       expect(res, contains(p.absolute(_isolateLibPath)));
       expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
 
@@ -301,6 +322,7 @@ void main() {
           await hitmap.prettyPrint(resolver, Loader(), reportBranches: true);
 
       expect(res, contains(p.absolute(_sampleAppPath)));
+      expect(res, contains(p.absolute(_sampleGeneratedPath)));
       expect(res, contains(p.absolute(_isolateLibPath)));
       expect(res, contains(p.absolute(p.join('lib', 'src', 'util.dart'))));
 

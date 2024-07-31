@@ -1,6 +1,7 @@
 ## 1.8.1-wip
 
 - Require Dart ^3.4
+- Fix bug where some ranges were able to bypass the `--scope-output` filters.
 - Add --ignore-files option allowing to exclude files from coverage reports using glob patterns
 
 ## 1.8.0

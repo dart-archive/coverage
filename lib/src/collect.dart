@@ -127,7 +127,6 @@ Future<Map<String, dynamic>> _getAllCoverage(
   final vm = await service.getVM();
   final allCoverage = <Map<String, dynamic>>[];
   final version = await service.getVersion();
-  final fastIsoGroups = _versionCheck(version, 3, 61);
   final lineCacheSupported = _versionCheck(version, 4, 13);
 
   final sourceReportKinds = [
@@ -143,20 +142,10 @@ Future<Map<String, dynamic>> _getAllCoverage(
   // group, otherwise we'll double count the hits.
   final isolateOwnerGroup = <String, String>{};
   final coveredIsolateGroups = <String>{};
-  if (!fastIsoGroups) {
-    for (var isolateGroupRef in vm.isolateGroups!) {
-      final isolateGroup = await service.getIsolateGroup(isolateGroupRef.id!);
-      for (var isolateRef in isolateGroup.isolates!) {
-        isolateOwnerGroup[isolateRef.id!] = isolateGroupRef.id!;
-      }
-    }
-  }
 
   for (var isolateRef in vm.isolates!) {
     if (isolateIds != null && !isolateIds.contains(isolateRef.id)) continue;
-    final isolateGroupId = fastIsoGroups
-        ? isolateRef.isolateGroupId
-        : isolateOwnerGroup[isolateRef.id];
+    final isolateGroupId = isolateRef.isolateGroupId;
     if (isolateGroupId != null) {
       if (coveredIsolateGroups.contains(isolateGroupId)) continue;
       coveredIsolateGroups.add(isolateGroupId);

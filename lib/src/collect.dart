@@ -127,7 +127,6 @@ Future<Map<String, dynamic>> _getAllCoverage(
   final vm = await service.getVM();
   final allCoverage = <Map<String, dynamic>>[];
   final version = await service.getVersion();
-  final reportLines = _versionCheck(version, 3, 51);
   final branchCoverageSupported = _versionCheck(version, 3, 56);
   final libraryFilters = _versionCheck(version, 3, 57);
   final fastIsoGroups = _versionCheck(version, 3, 61);
@@ -187,7 +186,7 @@ Future<Map<String, dynamic>> _getAllCoverage(
             sourceReportKinds,
             forceCompile: true,
             scriptId: script.id,
-            reportLines: reportLines ? true : null,
+            reportLines: true,
             librariesAlreadyCompiled: librariesAlreadyCompiled,
           );
         } on SentinelException {
@@ -199,7 +198,6 @@ Future<Map<String, dynamic>> _getAllCoverage(
             scriptReport,
             includeDart,
             functionCoverage,
-            reportLines,
             coverableLineCache,
             scopedOutput);
         allCoverage.addAll(coverage);
@@ -211,7 +209,7 @@ Future<Map<String, dynamic>> _getAllCoverage(
           isolateRef.id!,
           sourceReportKinds,
           forceCompile: true,
-          reportLines: reportLines ? true : null,
+          reportLines: true,
           libraryFilters: scopedOutput.isNotEmpty && libraryFilters
               ? List.from(scopedOutput.map((filter) => 'package:$filter/'))
               : null,
@@ -226,7 +224,6 @@ Future<Map<String, dynamic>> _getAllCoverage(
           isolateReport,
           includeDart,
           functionCoverage,
-          reportLines,
           coverableLineCache,
           scopedOutput);
       allCoverage.addAll(coverage);
@@ -310,13 +307,12 @@ Future<List<Map<String, dynamic>>> _processSourceReport(
     SourceReport report,
     bool includeDart,
     bool functionCoverage,
-    bool reportLines,
     Map<String, Set<int>>? coverableLineCache,
     Set<String> scopedOutput) async {
   final hitMaps = <Uri, HitMap>{};
   final scripts = <ScriptRef, Script>{};
   final libraries = <LibraryRef>{};
-  final needScripts = functionCoverage || !reportLines;
+  final needScripts = functionCoverage;
 
   Future<Script?> getScript(ScriptRef? scriptRef) async {
     if (scriptRef == null) {
@@ -425,15 +421,7 @@ Future<List<Map<String, dynamic>>> _processSourceReport(
 
     void forEachLine(List<int>? tokenPositions, void Function(int line) body) {
       if (tokenPositions == null) return;
-      for (final pos in tokenPositions) {
-        final line = reportLines ? pos : _getLineFromTokenPos(script!, pos);
-        if (line == null) {
-          if (_debugTokenPositions) {
-            stderr.write(
-                'tokenPos $pos has no line mapping for script $scriptUri');
-          }
-          continue;
-        }
+      for (final line in tokenPositions) {
         body(line);
       }
     }

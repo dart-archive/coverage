@@ -63,58 +63,6 @@ MockVmService _mockService(
 void main() {
   group('Mock VM Service', () {
     test('Collect coverage', () async {
-      final service = _mockService(3, 0);
-      when(service.getSourceReport('isolate', ['Coverage'], forceCompile: true))
-          .thenAnswer((_) async => SourceReport(
-                ranges: [
-                  _range(
-                    0,
-                    SourceReportCoverage(
-                      hits: [15],
-                      misses: [32],
-                    ),
-                  ),
-                  _range(
-                    1,
-                    SourceReportCoverage(
-                      hits: [75],
-                      misses: [34],
-                    ),
-                  ),
-                ],
-                scripts: [
-                  ScriptRef(
-                    uri: 'package:foo/foo.dart',
-                    id: 'foo',
-                  ),
-                  ScriptRef(
-                    uri: 'package:bar/bar.dart',
-                    id: 'bar',
-                  ),
-                ],
-              ));
-      when(service.getObject('isolate', 'foo'))
-          .thenAnswer((_) async => _script([
-                [12, 15, 7],
-                [47, 32, 19],
-              ]));
-      when(service.getObject('isolate', 'bar'))
-          .thenAnswer((_) async => _script([
-                [52, 34, 10],
-                [95, 75, 3],
-              ]));
-
-      final jsonResult = await collect(Uri(), false, false, false, null,
-          serviceOverrideForTesting: service);
-      final result = await HitMap.parseJson(
-          jsonResult['coverage'] as List<Map<String, dynamic>>);
-
-      expect(result.length, 2);
-      expect(result['package:foo/foo.dart']?.lineHits, {12: 1, 47: 0});
-      expect(result['package:bar/bar.dart']?.lineHits, {95: 1, 52: 0});
-    });
-
-    test('Collect coverage, report lines', () async {
       final service = _mockService(3, 51);
       when(service.getSourceReport(
         'isolate',
@@ -179,13 +127,14 @@ void main() {
         ['Coverage'],
         scriptId: 'foo',
         forceCompile: true,
+        reportLines: true,
       )).thenAnswer((_) async => SourceReport(
             ranges: [
               _range(
                 0,
                 SourceReportCoverage(
-                  hits: [15],
-                  misses: [32],
+                  hits: [12],
+                  misses: [47],
                 ),
               ),
             ],
@@ -196,11 +145,6 @@ void main() {
               ),
             ],
           ));
-      when(service.getObject('isolate', 'foo'))
-          .thenAnswer((_) async => _script([
-                [12, 15, 7],
-                [47, 32, 19],
-              ]));
 
       final jsonResult = await collect(Uri(), false, false, false, {'foo'},
           serviceOverrideForTesting: service);
@@ -473,8 +417,12 @@ void main() {
         'Collect coverage, no scoped output, '
         'handles SentinelException from getSourceReport', () async {
       final service = _mockService(3, 0);
-      when(service.getSourceReport('isolate', ['Coverage'], forceCompile: true))
-          .thenThrow(FakeSentinelException());
+      when(service.getSourceReport(
+        'isolate',
+        ['Coverage'],
+        forceCompile: true,
+        reportLines: true,
+      )).thenThrow(FakeSentinelException());
 
       final jsonResult = await collect(Uri(), false, false, false, null,
           serviceOverrideForTesting: service);

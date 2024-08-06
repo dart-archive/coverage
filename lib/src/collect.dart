@@ -127,16 +127,9 @@ Future<Map<String, dynamic>> _getAllCoverage(
   final vm = await service.getVM();
   final allCoverage = <Map<String, dynamic>>[];
   final version = await service.getVersion();
-  final branchCoverageSupported = _versionCheck(version, 3, 56);
   final libraryFilters = _versionCheck(version, 3, 57);
   final fastIsoGroups = _versionCheck(version, 3, 61);
   final lineCacheSupported = _versionCheck(version, 4, 13);
-
-  if (branchCoverage && !branchCoverageSupported) {
-    branchCoverage = false;
-    stderr.writeln('Branch coverage was requested, but is not supported'
-        ' by the VM version. Try updating to a newer version of Dart');
-  }
 
   final sourceReportKinds = [
     SourceReportKind.kCoverage,

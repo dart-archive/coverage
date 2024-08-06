@@ -127,7 +127,6 @@ Future<Map<String, dynamic>> _getAllCoverage(
   final vm = await service.getVM();
   final allCoverage = <Map<String, dynamic>>[];
   final version = await service.getVersion();
-  final libraryFilters = _versionCheck(version, 3, 57);
   final fastIsoGroups = _versionCheck(version, 3, 61);
   final lineCacheSupported = _versionCheck(version, 4, 13);
 
@@ -162,65 +161,31 @@ Future<Map<String, dynamic>> _getAllCoverage(
       if (coveredIsolateGroups.contains(isolateGroupId)) continue;
       coveredIsolateGroups.add(isolateGroupId);
     }
-    if (scopedOutput.isNotEmpty && !libraryFilters) {
-      late final ScriptList scripts;
-      try {
-        scripts = await service.getScripts(isolateRef.id!);
-      } on SentinelException {
-        continue;
-      }
-      for (final script in scripts.scripts!) {
-        // Skip scripts which should not be included in the report.
-        if (!scopedOutput.includesScript(script.uri)) continue;
-        late final SourceReport scriptReport;
-        try {
-          scriptReport = await service.getSourceReport(
-            isolateRef.id!,
-            sourceReportKinds,
-            forceCompile: true,
-            scriptId: script.id,
-            reportLines: true,
-            librariesAlreadyCompiled: librariesAlreadyCompiled,
-          );
-        } on SentinelException {
-          continue;
-        }
-        final coverage = await _processSourceReport(
-            service,
-            isolateRef,
-            scriptReport,
-            includeDart,
-            functionCoverage,
-            coverableLineCache,
-            scopedOutput);
-        allCoverage.addAll(coverage);
-      }
-    } else {
-      late final SourceReport isolateReport;
-      try {
-        isolateReport = await service.getSourceReport(
-          isolateRef.id!,
-          sourceReportKinds,
-          forceCompile: true,
-          reportLines: true,
-          libraryFilters: scopedOutput.isNotEmpty && libraryFilters
-              ? List.from(scopedOutput.map((filter) => 'package:$filter/'))
-              : null,
-          librariesAlreadyCompiled: librariesAlreadyCompiled,
-        );
-      } on SentinelException {
-        continue;
-      }
-      final coverage = await _processSourceReport(
-          service,
-          isolateRef,
-          isolateReport,
-          includeDart,
-          functionCoverage,
-          coverableLineCache,
-          scopedOutput);
-      allCoverage.addAll(coverage);
+
+    late final SourceReport isolateReport;
+    try {
+      isolateReport = await service.getSourceReport(
+        isolateRef.id!,
+        sourceReportKinds,
+        forceCompile: true,
+        reportLines: true,
+        libraryFilters: scopedOutput.isNotEmpty
+            ? List.from(scopedOutput.map((filter) => 'package:$filter/'))
+            : null,
+        librariesAlreadyCompiled: librariesAlreadyCompiled,
+      );
+    } on SentinelException {
+      continue;
     }
+    final coverage = await _processSourceReport(
+        service,
+        isolateRef,
+        isolateReport,
+        includeDart,
+        functionCoverage,
+        coverableLineCache,
+        scopedOutput);
+    allCoverage.addAll(coverage);
   }
   return <String, dynamic>{'type': 'CodeCoverage', 'coverage': allCoverage};
 }

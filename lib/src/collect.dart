@@ -109,12 +109,6 @@ Future<Map<String, dynamic>> collect(Uri serviceUri, bool resume,
   }
 }
 
-bool _versionCheck(Version version, int minMajor, int minMinor) {
-  final major = version.major ?? 0;
-  final minor = version.minor ?? 0;
-  return major > minMajor || (major == minMajor && minor >= minMinor);
-}
-
 Future<Map<String, dynamic>> _getAllCoverage(
     VmService service,
     bool includeDart,
@@ -126,21 +120,17 @@ Future<Map<String, dynamic>> _getAllCoverage(
   scopedOutput ??= <String>{};
   final vm = await service.getVM();
   final allCoverage = <Map<String, dynamic>>[];
-  final version = await service.getVersion();
-  final lineCacheSupported = _versionCheck(version, 4, 13);
 
   final sourceReportKinds = [
     SourceReportKind.kCoverage,
     if (branchCoverage) SourceReportKind.kBranchCoverage,
   ];
 
-  final librariesAlreadyCompiled =
-      lineCacheSupported ? coverableLineCache?.keys.toList() : null;
+  final librariesAlreadyCompiled = coverableLineCache?.keys.toList();
 
   // Program counters are shared between isolates in the same group. So we need
   // to make sure we're only gathering coverage data for one isolate in each
   // group, otherwise we'll double count the hits.
-  final isolateOwnerGroup = <String, String>{};
   final coveredIsolateGroups = <String>{};
 
   for (var isolateRef in vm.isolates!) {

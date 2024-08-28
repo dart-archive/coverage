@@ -1,3 +1,6 @@
+> [!IMPORTANT]  
+> This repo has moved to https://github.com/dart-lang/tools/tree/main/pkgs/coverage
+
 Coverage provides coverage data collection, manipulation, and formatting for
 Dart.
 
